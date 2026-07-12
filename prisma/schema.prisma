@@ -1,0 +1,283 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String           @id @default(uuid())
+  email           String           @unique
+  password        String
+  fullName        String?
+  avatarUrl       String?
+  bio             String?
+  website         String?
+  role            String           @default("student")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  referralCode    String?          @unique
+  courses         Course[]         @relation("InstructorCourses")
+  enrollments     Enrollment[]
+  progress        Progress[]
+  reviews         Review[]
+  wishlist        Wishlist[]
+  discussions     Discussion[]
+  discussionLikes DiscussionLike[]
+  notes           Note[]
+  notifications   Notification[]
+  referrals       Referral[]       @relation("ReferrerUser")
+  referredBy      Referral?        @relation("ReferredUser")
+  streak          Int              @default(0)
+  lastLearnDate   DateTime?
+  quizAttempts    QuizAttempt[]
+}
+
+model Course {
+  id              String         @id @default(uuid())
+  title           String
+  slug            String         @unique
+  description     String?
+  thumbnailUrl    String?
+  price           Int            @default(0)
+  category        String?
+  level           String         @default("beginner")
+  isPublished     Boolean        @default(false)
+  estimatedHours  Int?
+  language        String         @default("id")
+  tags            String[]
+  instructorId    String
+  instructor      User           @relation("InstructorCourses", fields: [instructorId], references: [id])
+  sections        Section[]
+  enrollments     Enrollment[]
+  reviews         Review[]
+  wishlistedBy    Wishlist[]
+  learningPaths   LearningPathCourse[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Section {
+  id         String   @id @default(uuid())
+  title      String
+  orderIndex Int
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id])
+  lessons    Lesson[]
+}
+
+model Lesson {
+  id          String       @id @default(uuid())
+  title       String
+  slug        String
+  contentType String       @default("video") // video, article, quiz
+  videoUrl    String?
+  bodyText    String?
+  orderIndex  Int
+  isPreview   Boolean      @default(false)
+  sectionId   String
+  section     Section      @relation(fields: [sectionId], references: [id])
+  progress    Progress[]
+  quizzes     Quiz[]
+  discussions Discussion[]
+  notes       Note[]
+  attachments Attachment[] // New: Downloadable resources
+  quizAttempts QuizAttempt[] // New: Relation to quiz attempts
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  title     String
+  fileUrl   String
+  fileSize  Int?     // Size in bytes
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Quiz {
+  id            String   @id @default(uuid())
+  question      String
+  options       String[] // Array of options
+  correctOption Int      // Index of correct option
+  explanation   String?
+  lessonId      String
+  lesson        Lesson   @relation(fields: [lessonId], references: [id])
+}
+
+model Wishlist {
+  id        String   @id @default(uuid())
+  userId    String
+  courseId  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+model Enrollment {
+  id            String   @id @default(uuid())
+  userId        String
+  courseId      String
+  status        String   @default("pending") // pending, paid, cancelled
+  paymentId     String?  @unique // ID transaksi dari Midtrans
+  snapToken     String?  // Token untuk popup Midtrans
+  amount        Int      @default(0)
+  enrolledAt    DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id])
+  course        Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+model Progress {
+  id            String    @id @default(uuid())
+  userId        String
+  lessonId      String
+  isCompleted   Boolean   @default(false)
+  completedAt   DateTime?
+  lastPosition  Float?    @default(0) // Untuk video resume (detik)
+  user          User      @relation(fields: [userId], references: [id])
+  lesson        Lesson    @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+}
+
+model Discussion {
+  id        String           @id @default(uuid())
+  content   String
+  userId    String
+  lessonId  String
+  parentId  String?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id])
+  lesson    Lesson           @relation(fields: [lessonId], references: [id])
+  parent    Discussion?      @relation("DiscussionReplies", fields: [parentId], references: [id])
+  replies   Discussion[]     @relation("DiscussionReplies")
+  likes     DiscussionLike[]
+}
+
+model DiscussionLike {
+  id           String     @id @default(uuid())
+  userId       String
+  discussionId String
+  createdAt    DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id])
+  discussion   Discussion @relation(fields: [discussionId], references: [id])
+
+  @@unique([userId, discussionId])
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  content   String
+  userId    String
+  lessonId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int      @default(5)
+  comment   String?
+  userId    String
+  courseId  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  type      String   @default("info") // info, success, warning, error
+  isRead    Boolean  @default(false)
+  userId    String
+  link      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model TransactionLog {
+  id        String   @id @default(uuid())
+  orderId   String
+  status    String
+  payload   Json
+  createdAt DateTime @default(now())
+}
+
+model QuizAttempt {
+  id        String   @id @default(uuid())
+  score     Int
+  answers   Json
+  userId    String
+  lessonId  String
+  user      User     @relation(fields: [userId], references: [id])
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+// ============================================================
+// FITUR BARU
+// ============================================================
+
+// Fitur 1: Learning Path
+model LearningPath {
+  id          String               @id @default(uuid())
+  title       String
+  slug        String               @unique
+  description String?
+  level       String               @default("beginner")
+  iconUrl     String?
+  color       String               @default("#6366f1")
+  isPublished Boolean              @default(true)
+  orderIndex  Int                  @default(0)
+  courses     LearningPathCourse[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model LearningPathCourse {
+  id             String       @id @default(uuid())
+  learningPathId String
+  courseId       String
+  orderIndex     Int
+  learningPath   LearningPath @relation(fields: [learningPathId], references: [id])
+  course         Course       @relation(fields: [courseId], references: [id])
+
+  @@unique([learningPathId, courseId])
+}
+
+// Fitur 8: Referral Program
+model Referral {
+  id         String   @id @default(uuid())
+  referrerId String
+  referredId String   @unique
+  reward     Int      @default(0)
+  isRedeemed Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  referrer   User     @relation("ReferrerUser", fields: [referrerId], references: [id])
+  referred   User     @relation("ReferredUser", fields: [referredId], references: [id])
+}
+
+// Fitur 12: Share tracking
+model CourseShare {
+  id        String   @id @default(uuid())
+  courseId  String
+  userId    String?
+  platform  String   @default("link")
+  createdAt DateTime @default(now())
+}
