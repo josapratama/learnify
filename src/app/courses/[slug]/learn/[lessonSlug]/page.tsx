@@ -23,18 +23,168 @@ import LessonNotes from "@/components/LessonNotes";
 import ShareButton from "@/components/ShareButton";
 import CodeEditor from "@/components/CodeEditor";
 
-// Mapping kategori kursus ke bahasa editor
-function getEditorLanguage(
-  category: string | null,
-): "javascript" | "python" | "sql" | "html" | null {
-  if (!category) return null;
-  const c = category.toLowerCase();
-  if (c.includes("python") || c.includes("data")) return "python";
-  if (c.includes("sql") || c.includes("database")) return "sql";
-  if (c.includes("web") || c.includes("javascript") || c.includes("typescript"))
-    return "javascript";
-  if (c.includes("programming")) return "python";
-  return null;
+interface CodeEditorConfig {
+  language: "javascript" | "typescript" | "python" | "sql" | "html" | "css";
+  initialCode?: string;
+}
+
+// Menentukan apakah materi membutuhkan code editor secara kontekstual
+function resolveLessonCodeEditor(
+  course: { title: string; category: string | null },
+  lesson: { title: string; contentType: string; bodyText?: string | null }
+): CodeEditorConfig | null {
+  if (lesson.contentType === "quiz") return null;
+
+  const courseTitleLower = course.title.toLowerCase();
+  const categoryLower = (course.category || "").toLowerCase();
+  const lessonTitleLower = lesson.title.toLowerCase();
+  const bodyText = lesson.bodyText || "";
+
+  // Kursus non-coding (Git, Docker, Linux, Networking, Security, Design) tidak butuh editor bahasa pemrograman
+  const nonCodingKeywords = [
+    "git",
+    "github",
+    "docker",
+    "linux",
+    "cyber",
+    "security",
+    "jaringan",
+    "design",
+    "figma",
+    "manajemen",
+  ];
+  const isPrimarilyNonCodingCourse = nonCodingKeywords.some(
+    (kw) => courseTitleLower.includes(kw) || categoryLower.includes(kw)
+  );
+
+  if (isPrimarilyNonCodingCourse) return null;
+
+  // Tentukan bahasa editor yang relevan
+  let detectedLang: "javascript" | "python" | "sql" | "html" | null = null;
+  if (courseTitleLower.includes("python") || categoryLower.includes("python")) {
+    detectedLang = "python";
+  } else if (
+    courseTitleLower.includes("sql") ||
+    categoryLower.includes("database") ||
+    categoryLower.includes("sql")
+  ) {
+    detectedLang = "sql";
+  } else if (
+    courseTitleLower.includes("html") ||
+    courseTitleLower.includes("css") ||
+    categoryLower.includes("frontend")
+  ) {
+    detectedLang = "html";
+  } else if (
+    courseTitleLower.includes("javascript") ||
+    courseTitleLower.includes("typescript") ||
+    courseTitleLower.includes("react") ||
+    courseTitleLower.includes("next") ||
+    categoryLower.includes("web")
+  ) {
+    detectedLang = "javascript";
+  } else if (categoryLower.includes("programming")) {
+    if (bodyText.includes("```python") || bodyText.includes("def ") || bodyText.includes("print(")) {
+      detectedLang = "python";
+    } else if (bodyText.includes("```javascript") || bodyText.includes("```js") || bodyText.includes("console.log")) {
+      detectedLang = "javascript";
+    } else if (bodyText.includes("```sql") || bodyText.includes("SELECT ")) {
+      detectedLang = "sql";
+    }
+  }
+
+  if (!detectedLang) return null;
+
+  // Filter: materi teori/konseptual/intro tidak memerlukan editor
+  const theoryKeywords = [
+    "apa itu",
+    "pengenalan",
+    "mengenal",
+    "sejarah",
+    "konsep",
+    "arsitektur",
+    "instalasi",
+    "persiapan",
+    "setup",
+    "overview",
+    "roadmap",
+    "kesimpulan",
+    "rangkuman",
+    "penutup",
+    "teori",
+    "kenapa",
+    "mengapa",
+    "struktur proyek",
+    "konfigurasi",
+    "aturan",
+    "mindset",
+  ];
+  const isTheoryLesson = theoryKeywords.some((kw) => lessonTitleLower.includes(kw));
+
+  // Materi eksplisit praktik / hands-on coding
+  const practiceKeywords = [
+    "perulangan",
+    "loop",
+    "while",
+    "for ",
+    "percabangan",
+    "pengkondisian",
+    "if",
+    "else",
+    "kondisi",
+    "fungsi",
+    "function",
+    "variabel",
+    "tipe data",
+    "array",
+    "list",
+    "object",
+    "dictionary",
+    "operator",
+    "manipulasi",
+    "studi kasus",
+    "praktik",
+    "latihan",
+    "hands-on",
+    "proyek",
+    "algoritma",
+    "query",
+    "kalkulator",
+    "class",
+    "oop",
+    "coding",
+    "menulis kode",
+  ];
+  const isExplicitPractice = practiceKeywords.some((kw) => lessonTitleLower.includes(kw));
+
+  // Cek apakah materi memiliki contoh blok kode yang bisa dijalankan
+  const hasExecutableCodeInBody =
+    bodyText.includes(`\`\`\`${detectedLang}`) ||
+    (detectedLang === "javascript" && bodyText.includes("```js")) ||
+    (detectedLang === "python" && bodyText.includes("```py"));
+
+  // Jika teori murni dan bukan latihan, sembunyikan editor
+  if (isTheoryLesson && !isExplicitPractice) {
+    return null;
+  }
+
+  // Hanya tampilkan jika memang materi praktik atau artikel memiliki contoh kode interaktif
+  if (!isExplicitPractice && !hasExecutableCodeInBody) {
+    return null;
+  }
+
+  // Ambil cuplikan kode dari artikel jika ada agar latihan relevan dengan materi
+  let initialCode: string | undefined = undefined;
+  const codeBlockRegex = new RegExp(`\`\`\`(?:${detectedLang}|js|py)?\\n([\\s\\S]*?)\`\`\``);
+  const match = bodyText.match(codeBlockRegex);
+  if (match && match[1] && match[1].trim().length > 10) {
+    initialCode = match[1].trim();
+  }
+
+  return {
+    language: detectedLang,
+    initialCode,
+  };
 }
 
 // Hitung estimasi waktu baca artikel (200 kata/menit)
@@ -371,12 +521,12 @@ export default async function LearnPage({
 
             {user && <DiscussionSection lessonId={currentLesson.id} />}
 
-            {/* Code Editor — muncul di kursus pemrograman */}
+            {/* Code Editor — hanya muncul pada materi hands-on / latihan coding yang relevan */}
             {(() => {
-              const lang = getEditorLanguage(course.category);
-              if (!lang || currentLesson.contentType === "quiz") return null;
+              const editorConfig = resolveLessonCodeEditor(course, currentLesson);
+              if (!editorConfig) return null;
               return (
-                <div className="mt-8 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
+                <div className="mt-8 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
                   <div className="px-5 py-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                     <div>
                       <p className="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-2">
@@ -386,9 +536,13 @@ export default async function LearnPage({
                         Eksperimen dan latihan langsung di sini
                       </p>
                     </div>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                      {editorConfig.language}
+                    </span>
                   </div>
                   <CodeEditor
-                    language={lang}
+                    language={editorConfig.language}
+                    initialCode={editorConfig.initialCode}
                     title={`Latihan — ${currentLesson.title}`}
                     showRunButton
                   />
