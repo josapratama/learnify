@@ -13,6 +13,7 @@ import {
   HelpCircle,
   AlertCircle,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -29,8 +30,9 @@ type QuizDraft = Omit<Quiz, "id">;
 
 interface QuizEditorProps {
   lessonId: string;
-  /** true jika lesson belum disimpan ke DB */
   isNewLesson?: boolean;
+  lessonTitle?: string;
+  lessonContent?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -223,12 +225,19 @@ function QuizForm({
 
 // ─── QuizEditor ───────────────────────────────────────────────────────────────
 
-export default function QuizEditor({ lessonId, isNewLesson }: QuizEditorProps) {
+export default function QuizEditor({
+  lessonId,
+  isNewLesson,
+  lessonTitle,
+  lessonContent,
+}: QuizEditorProps) {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(false);
+  const [generatingAi, setGeneratingAi] = useState(false);
   const [saving, setSaving] = useState<string | null>(null); // quiz id or "new"
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Edit state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -237,6 +246,9 @@ export default function QuizEditor({ lessonId, isNewLesson }: QuizEditorProps) {
   // New question form state
   const [showNewForm, setShowNewForm] = useState(false);
   const [newDraft, setNewDraft] = useState<QuizDraft>(makeEmptyDraft());
+
+  // Pending delete confirmation
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   // Collapsed quiz cards
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
@@ -268,6 +280,50 @@ export default function QuizEditor({ lessonId, isNewLesson }: QuizEditorProps) {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+
+  // ── AI Generate Quiz ─────────────────────────────────────────────────────
+  const handleAiGenerate = async () => {
+    setGeneratingAi(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      const res = await fetch("/api/instructor/ai/generate-quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lessonId,
+          lessonTitle,
+          lessonContent,
+          autoSave: !isNewLesson,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal membuat kuis AI");
+
+      if (Array.isArray(data.quizzes)) {
+        if (!isNewLesson) {
+          // If auto-saved, refresh from API or append returned records
+          setQuizzes((prev) => [...prev, ...data.quizzes]);
+        } else {
+          // For client preview
+          setQuizzes((prev) => [
+            ...prev,
+            ...data.quizzes.map((q: any, i: number) => ({
+              id: `draft-quiz-${Date.now()}-${i}`,
+              ...q,
+            })),
+          ]);
+        }
+        setSuccessMsg(`Berhasil membuat ${data.quizzes.length} pertanyaan dengan AI! ✨`);
+        setTimeout(() => setSuccessMsg(null), 4000);
+      }
+    } catch (err: any) {
+      setError(err.message || "Gagal memproses AI generator");
+    } finally {
+      setGeneratingAi(false);
+    }
+  };
 
   // ── Create ────────────────────────────────────────────────────────────────
   const handleCreate = async () => {
@@ -309,7 +365,6 @@ export default function QuizEditor({ lessonId, isNewLesson }: QuizEditorProps) {
       explanation: quiz.explanation ?? "",
     });
     setError(null);
-    // Expand jika sedang collapsed
     setCollapsedIds((prev) => {
       const next = new Set(prev);
       next.delete(quiz.id);
@@ -347,8 +402,7 @@ export default function QuizEditor({ lessonId, isNewLesson }: QuizEditorProps) {
   };
 
   // ── Delete ────────────────────────────────────────────────────────────────
-  const handleDelete = async (id: string) => {
-    if (!confirm("Hapus pertanyaan ini?")) return;
+  const confirmDelete = async (id: string) => {
     setDeleting(id);
     setError(null);
     try {
@@ -360,6 +414,7 @@ export default function QuizEditor({ lessonId, isNewLesson }: QuizEditorProps) {
       if (!res.ok) throw new Error("Gagal menghapus");
       setQuizzes((prev) => prev.filter((q) => q.id !== id));
       if (editingId === id) setEditingId(null);
+      setPendingDeleteId(null);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -372,9 +427,8 @@ export default function QuizEditor({ lessonId, isNewLesson }: QuizEditorProps) {
     return (
       <div className="p-8 text-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl">
         <AlertCircle className="w-8 h-8 text-yellow-400 mx-auto mb-3" />
-        <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
-          Simpan kurikulum terlebih dahulu untuk mulai menambahkan pertanyaan
-          kuis.
+        <p className="text-sm font-bold text-gray-600 dark:text-gray-300">
+          Simpan kurikulum terlebih dahulu agar materi memiliki ID permanen untuk menambahkan kuis.
         </p>
       </div>
     );
@@ -383,26 +437,52 @@ export default function QuizEditor({ lessonId, isNewLesson }: QuizEditorProps) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <HelpCircle className="w-5 h-5 text-orange-500 dark:text-orange-400" />
           <span className="text-sm font-black text-gray-700 dark:text-gray-300">
-            {quizzes.length} Pertanyaan
+            {quizzes.length} Pertanyaan Kuis
           </span>
         </div>
-        {!showNewForm && (
+
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              setShowNewForm(true);
-              setNewDraft(makeEmptyDraft());
-              setError(null);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white text-xs font-black rounded-xl hover:bg-orange-600 transition shadow-md shadow-orange-100 dark:shadow-none"
+            type="button"
+            onClick={handleAiGenerate}
+            disabled={generatingAi}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-linear-to-r from-purple-600 to-indigo-600 text-white text-xs font-black rounded-xl hover:from-purple-700 hover:to-indigo-700 transition shadow-sm disabled:opacity-50"
           >
-            <Plus className="w-3.5 h-3.5" /> Tambah Pertanyaan
+            {generatingAi ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5" />
+            )}
+            {generatingAi ? "Membuat Kuis..." : "✨ Generate Kuis AI"}
           </button>
-        )}
+
+          {!showNewForm && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowNewForm(true);
+                setNewDraft(makeEmptyDraft());
+                setError(null);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-orange-500 text-white text-xs font-black rounded-xl hover:bg-orange-600 transition shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" /> Tambah Manual
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Success banner */}
+      {successMsg && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 rounded-xl border border-emerald-200 dark:border-emerald-800 text-sm font-semibold">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+          {successMsg}
+        </div>
+      )}
 
       {/* Error banner */}
       {error && (
@@ -423,18 +503,26 @@ export default function QuizEditor({ lessonId, isNewLesson }: QuizEditorProps) {
       {!loading && (
         <div className="space-y-3">
           {quizzes.length === 0 && !showNewForm && (
-            <div className="p-8 text-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl">
-              <HelpCircle className="w-8 h-8 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
-              <p className="text-sm text-gray-500 dark:text-gray-400 font-bold">
-                Belum ada pertanyaan. Klik &ldquo;Tambah Pertanyaan&rdquo; untuk
-                mulai.
+            <div className="p-8 text-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl bg-gray-50/50 dark:bg-gray-800/30">
+              <HelpCircle className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-semibold mb-3">
+                Belum ada pertanyaan kuis pada materi ini.
               </p>
+              <button
+                type="button"
+                onClick={handleAiGenerate}
+                disabled={generatingAi}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl text-xs font-bold hover:bg-purple-700 transition"
+              >
+                <Sparkles className="w-3.5 h-3.5" /> Buat Kuis Otomatis dengan AI
+              </button>
             </div>
           )}
 
           {quizzes.map((quiz, idx) => {
             const isEditing = editingId === quiz.id;
             const isCollapsed = collapsedIds.has(quiz.id);
+            const isConfirmingDelete = pendingDeleteId === quiz.id;
 
             return (
               <div
@@ -456,35 +544,58 @@ export default function QuizEditor({ lessonId, isNewLesson }: QuizEditorProps) {
                     {String.fromCharCode(65 + quiz.correctOption)}
                   </span>
 
-                  <div className="flex items-center gap-1 ml-1">
-                    <button
-                      onClick={() => toggleCollapse(quiz.id)}
-                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 dark:text-gray-500 transition"
-                    >
-                      {isCollapsed ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronUp className="w-4 h-4" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => startEdit(quiz)}
-                      className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(quiz.id)}
-                      disabled={deleting === quiz.id}
-                      className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 disabled:opacity-40 transition"
-                    >
-                      {deleting === quiz.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
+                  {isConfirmingDelete ? (
+                    <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-xl border border-red-200 dark:border-red-800">
+                      <span className="text-xs text-red-600 dark:text-red-400 font-semibold">
+                        Hapus?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => confirmDelete(quiz.id)}
+                        disabled={deleting === quiz.id}
+                        className="px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition"
+                      >
+                        Ya
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPendingDeleteId(null)}
+                        className="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-lg hover:bg-gray-300 transition"
+                      >
+                        Batal
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 ml-1">
+                      <button
+                        onClick={() => toggleCollapse(quiz.id)}
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 dark:text-gray-500 transition"
+                      >
+                        {isCollapsed ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronUp className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => startEdit(quiz)}
+                        className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setPendingDeleteId(quiz.id)}
+                        disabled={deleting === quiz.id}
+                        className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 disabled:opacity-40 transition"
+                      >
+                        {deleting === quiz.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Expanded body */}

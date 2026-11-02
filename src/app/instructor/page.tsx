@@ -20,6 +20,7 @@ import InstructorDashboardHeader from "@/components/InstructorDashboardHeader";
 import CourseActions from "@/components/CourseActions";
 import ThemeToggle from "@/components/ThemeToggle";
 import Footer from "@/components/Footer";
+import InstructorPayoutModal from "@/components/InstructorPayoutModal";
 
 export const metadata = {
   title: "Dashboard Instruktur | Learnify",
@@ -162,6 +163,7 @@ export default async function InstructorDashboard() {
                 Pembayaran Midtrans
               </span>
             </div>
+            <InstructorPayoutModal totalRevenue={totalRevenue} />
           </div>
 
           <div className="bg-white dark:bg-gray-900 p-6 md:p-8 rounded-[2rem] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 group hover:translate-y-[-4px] transition-all duration-300">

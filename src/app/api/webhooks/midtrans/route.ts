@@ -12,16 +12,21 @@ export async function POST(request: Request) {
       gross_amount,
       signature_key,
       transaction_status,
+      payment_type,
     } = body;
 
-    // Log Transaction
-    await prisma.transactionLog.create({
-      data: {
-        orderId: order_id,
-        status: transaction_status,
-        payload: body,
-      },
-    });
+    // Log Transaction safely
+    try {
+      await prisma.transactionLog.create({
+        data: {
+          orderId: String(order_id || "unknown"),
+          status: String(transaction_status || "unknown"),
+          payload: body,
+        },
+      });
+    } catch (logErr) {
+      console.warn("Could not log transaction:", logErr);
+    }
 
     // Verifikasi Signature Key (Keamanan)
     const serverKey =
@@ -38,7 +43,24 @@ export async function POST(request: Request) {
       );
     }
 
-    // Update status di database
+    // Check if enrollment exists
+    const existingEnrollment = await prisma.enrollment.findUnique({
+      where: { id: order_id },
+      include: {
+        course: { select: { title: true } },
+        user: { select: { email: true, fullName: true } },
+      },
+    });
+
+    if (!existingEnrollment) {
+      console.warn(`[Midtrans Webhook] Enrollment not found for order_id: ${order_id}`);
+      return NextResponse.json(
+        { message: "Order processed: record not found" },
+        { status: 200 },
+      );
+    }
+
+    // Tentukan status di database
     let dbStatus = "pending";
     if (
       transaction_status === "settlement" ||
@@ -62,17 +84,45 @@ export async function POST(request: Request) {
       },
     });
 
+    // Update payment record if exists
+    try {
+      await prisma.payment.upsert({
+        where: { enrollmentId: order_id },
+        update: {
+          status:
+            dbStatus === "paid"
+              ? "SUCCESS"
+              : dbStatus === "cancelled"
+                ? "FAILED"
+                : "PENDING",
+        },
+        create: {
+          enrollmentId: order_id,
+          amount: Number(gross_amount) || 0,
+          status:
+            dbStatus === "paid"
+              ? "SUCCESS"
+              : dbStatus === "cancelled"
+                ? "FAILED"
+                : "PENDING",
+          paymentMethod: payment_type || "midtrans",
+        },
+      });
+    } catch (paymentErr) {
+      console.warn("Payment upsert warning:", paymentErr);
+    }
+
     // Notify User on Success
     if (dbStatus === "paid") {
       await prisma.notification.create({
         data: {
           userId: enrollment.userId,
           title: "Pembayaran Berhasil!",
-          message: `Selamat! Pembayaran untuk kursus ${enrollment.course.title} telah berhasil dikonfirmasi.`,
+          message: `Selamat! Pembayaran untuk kursus "${enrollment.course.title}" telah berhasil dikonfirmasi.`,
           type: "success",
           link: "/dashboard",
         },
-      });
+      }).catch((notifErr) => console.warn("Notif warning:", notifErr));
 
       // Kirim email konfirmasi pembayaran
       if (enrollment.user.email) {

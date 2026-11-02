@@ -89,6 +89,9 @@ export default async function EditCoursePage({
           initialSections={course.sections}
           courseId={course.id}
           initialIsPublished={course.isPublished}
+          courseTitle={course.title}
+          courseCategory={course.category}
+          courseLevel={course.level}
         />
       </div>
     </div>
