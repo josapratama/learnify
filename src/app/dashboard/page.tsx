@@ -76,7 +76,7 @@ export default async function DashboardPage() {
       fullName: true,
       avatarUrl: true,
       streak: true,
-      lessonProgress: {
+      progress: {
         where: { isCompleted: true },
         select: { id: true },
       },
@@ -86,11 +86,11 @@ export default async function DashboardPage() {
 
   const leaderboard = topStudents
     .map((s) => {
-      const completed = s.lessonProgress.length;
+      const completed = s.progress.length;
       const xp = completed * 50 + (s.streak || 0) * 25;
       return {
         id: s.id,
-        name: s.fullName,
+        name: s.fullName || "Siswa",
         avatarUrl: s.avatarUrl,
         streak: s.streak || 0,
         completedLessons: completed,
@@ -100,7 +100,7 @@ export default async function DashboardPage() {
     .sort((a, b) => b.xp - a.xp)
     .slice(0, 5);
 
-  const myCompletedLessons = await prisma.lessonProgress.count({
+  const myCompletedLessons = await prisma.progress.count({
     where: { userId: user.id, isCompleted: true },
   });
   const myXp = myCompletedLessons * 50 + (dbUser?.streak || 0) * 25;
