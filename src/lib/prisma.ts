@@ -7,7 +7,7 @@ const prismaClientSingleton = () => {
   const pool = new Pool({
     connectionString:
       process.env.DATABASE_URL ||
-      "postgresql://myuser:mypassword@localhost:5432/edutech",
+      "postgresql://myuser:mypassword@localhost:5432/learnify_db",
   });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });

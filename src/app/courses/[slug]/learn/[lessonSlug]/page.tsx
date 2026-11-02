@@ -245,7 +245,7 @@ export default async function LearnPage({
               </div>
               <ShareButton
                 title={currentLesson.title}
-                url={`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/courses/${slug}/learn/${currentLesson.slug}`}
+                url={`${process.env.NEXT_PUBLIC_BASE_URL || "https://learnify.josapratama.com"}/courses/${slug}/learn/${currentLesson.slug}`}
               />
             </div>
 

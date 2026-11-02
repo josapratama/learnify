@@ -4,14 +4,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  GraduationCap,
   Globe,
   Mail,
   BookOpen,
   Users,
   Star,
 } from "lucide-react";
-import ThemeToggle from "@/components/ThemeToggle";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 export default async function InstructorProfilePage({
   params,
@@ -49,21 +49,25 @@ export default async function InstructorProfilePage({
       ? allRatings.reduce((a, b) => a + b, 0) / allRatings.length
       : 5;
 
+  const currentUser = await getCurrentUser();
+  const dbUser = currentUser
+    ? await prisma.user.findUnique({
+        where: { id: currentUser.id },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          streak: true,
+          avatarUrl: true,
+        },
+      })
+    : null;
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors duration-200">
       {/* Navbar */}
-      <nav className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-4 px-6 sticky top-0 z-50 transition-colors duration-200">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl"
-          >
-            <GraduationCap className="w-7 h-7" />
-            <span>EduTech</span>
-          </Link>
-          <ThemeToggle />
-        </div>
-      </nav>
+      <Navbar user={dbUser} />
 
       <div className="max-w-6xl mx-auto py-12 px-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -201,6 +205,8 @@ export default async function InstructorProfilePage({
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

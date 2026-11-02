@@ -10,6 +10,7 @@ export default function CreateCourseModal({
   onClose: () => void;
 }) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -23,6 +24,7 @@ export default function CreateCourseModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/instructor/courses", {
         method: "POST",
@@ -35,10 +37,10 @@ export default function CreateCourseModal({
         onClose();
       } else {
         const data = await res.json();
-        alert(data.error);
+        setError(data.error || "Gagal membuat kursus baru");
       }
-    } catch (error) {
-      console.error("Failed to create course", error);
+    } catch (err: any) {
+      setError(err?.message || "Terjadi kesalahan jaringan");
     } finally {
       setLoading(false);
     }
@@ -68,6 +70,11 @@ export default function CreateCourseModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-bold animate-in fade-in">
+              {error}
+            </div>
+          )}
           <div>
             <label className={labelClass}>Judul Kursus</label>
             <input

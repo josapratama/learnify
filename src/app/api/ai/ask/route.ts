@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     // Batasi panjang konten agar tidak overload token
     const contentPreview = (lessonContent || "").slice(0, 2000);
 
-    const systemPrompt = `Anda adalah asisten AI di platform EduTech.
+    const systemPrompt = `Anda adalah asisten AI di platform Learnify.
 Tugas Anda adalah membantu siswa memahami materi pelajaran yang sedang mereka pelajari.
 Materi saat ini berjudul: "${lessonTitle}".
 Ringkasan materi: "${contentPreview}".

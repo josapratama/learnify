@@ -31,40 +31,51 @@ export default async function Home({
   const { q, category, sort, level, price } = await searchParams;
   const user = await requireValidUser();
 
-  const dbUser = user
-    ? await prisma.user.findUnique({
-        where: { id: user.id },
-        select: {
-          id: true,
-          email: true,
-          fullName: true,
-          role: true,
-          streak: true,
-          avatarUrl: true,
-        },
-      })
-    : null;
+  const [categoryCounts, dbUser] = await Promise.all([
+    prisma.course.groupBy({
+      by: ["category"],
+      where: { isPublished: true },
+      _count: { id: true },
+    }),
+    user
+      ? prisma.user.findUnique({
+          where: { id: user.id },
+          select: {
+            id: true,
+            email: true,
+            fullName: true,
+            role: true,
+            streak: true,
+            avatarUrl: true,
+          },
+        })
+      : null,
+  ]);
+
+  const countMap = Object.fromEntries(
+    categoryCounts.map((c) => [c.category, c._count.id]),
+  );
 
   const categories = [
     {
       name: "Programming",
       icon: <Code className="w-5 h-5" />,
-      count: "12 Kursus",
+      count: `${countMap["Programming"] || 0} Kursus`,
     },
     {
       name: "Internet of Things",
       icon: <Cpu className="w-5 h-5" />,
-      count: "5 Kursus",
+      count: `${countMap["Internet of Things"] || 0} Kursus`,
     },
     {
       name: "Web Development",
       icon: <Globe className="w-5 h-5" />,
-      count: "8 Kursus",
+      count: `${countMap["Web Development"] || 0} Kursus`,
     },
     {
       name: "Fundamental",
       icon: <BookOpen className="w-5 h-5" />,
-      count: "4 Kursus",
+      count: `${countMap["Fundamental"] || 0} Kursus`,
     },
   ];
 

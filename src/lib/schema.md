@@ -1,4 +1,4 @@
-# Rancangan Database EduTech (Supabase / PostgreSQL)
+# Rancangan Database Learnify (PostgreSQL)
 
 ## 1. Profiles (Tabel User)
 Menyimpan informasi tambahan pengguna.

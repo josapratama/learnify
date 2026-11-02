@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     // Proses referral jika ada kode (non-blocking)
     if (referralCode) {
       fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/referral`,
+        `${process.env.NEXT_PUBLIC_BASE_URL || "https://learnify.josapratama.com"}/api/referral`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

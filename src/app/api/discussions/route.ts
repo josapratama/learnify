@@ -100,7 +100,7 @@ export async function POST(req: Request) {
           discussion.lesson.title,
           user.fullName || user.email,
           discussion.content,
-          `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}${lessonUrl}`,
+          `${process.env.NEXT_PUBLIC_BASE_URL || "https://learnify.josapratama.com"}${lessonUrl}`,
         ).catch(() => {});
       }
     }

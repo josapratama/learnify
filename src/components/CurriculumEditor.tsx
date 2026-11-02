@@ -54,7 +54,16 @@ export default function CurriculumEditor({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [expandedLesson, setExpandedLesson] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const router = useRouter();
+
+  const showToast = (type: "success" | "error", message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   const handleSave = async () => {
     setLoading(true);
@@ -66,14 +75,14 @@ export default function CurriculumEditor({
       });
 
       if (res.ok) {
-        alert("Kurikulum dan status kursus berhasil disimpan!");
+        showToast("success", "Kurikulum dan status kursus berhasil disimpan!");
         router.refresh();
       } else {
-        alert("Gagal menyimpan kurikulum");
+        showToast("error", "Gagal menyimpan kurikulum. Silakan coba lagi.");
       }
     } catch (error) {
       console.error(error);
-      alert("Terjadi kesalahan");
+      showToast("error", "Terjadi kesalahan saat menyimpan kurikulum.");
     } finally {
       setLoading(false);
     }
@@ -137,6 +146,24 @@ export default function CurriculumEditor({
 
   return (
     <div className="space-y-6">
+      {toast && (
+        <div
+          className={`p-4 rounded-2xl flex items-center justify-between gap-3 text-sm font-bold shadow-lg animate-in fade-in slide-in-from-top-2 duration-200 ${
+            toast.type === "success"
+              ? "bg-emerald-500 text-white shadow-emerald-500/20"
+              : "bg-red-500 text-white shadow-red-500/20"
+          }`}
+        >
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="p-1 hover:bg-white/20 rounded-lg transition"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm gap-4 transition-colors">
         <div className="flex items-center gap-4">
           <div

@@ -52,8 +52,9 @@ export default async function CertificatePage({
     redirect("/dashboard");
   }
 
-  const certificateUrl = `https://edutech.com/certificate/${enrollment.id}`;
-  const shareText = `Saya baru saja menyelesaikan kursus "${enrollment.course.title}" di EduTech! 🎓`;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://learnify.josapratama.com";
+  const certificateUrl = `${baseUrl}/certificate/${enrollment.id}`;
+  const shareText = `Saya baru saja menyelesaikan kursus "${enrollment.course.title}" di Learnify! 🎓`;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-12 px-6 flex flex-col items-center transition-colors duration-200">
@@ -115,7 +116,7 @@ export default async function CertificatePage({
             <div className="flex items-center gap-2 text-blue-600 opacity-30">
               <Award className="w-12 h-12" />
               <div className="text-left leading-none">
-                <p className="font-bold text-sm">EduTech Verified</p>
+                <p className="font-bold text-sm">Learnify Verified</p>
                 <p className="text-[10px]">
                   ID: {enrollment.id.substring(0, 8).toUpperCase()}
                 </p>

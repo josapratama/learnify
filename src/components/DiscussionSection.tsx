@@ -18,6 +18,7 @@ export default function DiscussionSection({ lessonId }: { lessonId: string }) {
   const [newComment, setNewComment] = useState("");
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authWarning, setAuthWarning] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDiscussions();
@@ -59,9 +60,10 @@ export default function DiscussionSection({ lessonId }: { lessonId: string }) {
       if (res.ok) {
         if (!parentId) setNewComment("");
         setReplyTo(null);
+        setAuthWarning(null);
         fetchDiscussions();
       } else if (res.status === 401) {
-        alert("Silakan login untuk berdiskusi.");
+        setAuthWarning("Silakan masuk ke akun Anda terlebih dahulu untuk mengirim diskusi.");
       }
     } catch (error) {
       console.error("Failed to post discussion", error);
@@ -76,6 +78,18 @@ export default function DiscussionSection({ lessonId }: { lessonId: string }) {
           Diskusi &amp; Tanya Jawab
         </h3>
       </div>
+
+      {authWarning && (
+        <div className="mb-4 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold flex items-center justify-between">
+          <span>{authWarning}</span>
+          <a
+            href="/login"
+            className="underline hover:text-amber-950 dark:hover:text-amber-100"
+          >
+            Masuk Sekarang
+          </a>
+        </div>
+      )}
 
       <form onSubmit={(e) => handleSubmit(e)} className="mb-8">
         <textarea

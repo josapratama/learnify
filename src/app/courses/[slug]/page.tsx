@@ -203,7 +203,7 @@ export default async function CourseDetailPage({
             <div className="flex justify-center mt-3">
               <ShareButton
                 title={course.title}
-                url={`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/courses/${course.slug}`}
+                url={`${process.env.NEXT_PUBLIC_BASE_URL || "https://learnify.josapratama.com"}/courses/${course.slug}`}
                 courseId={course.id}
               />
             </div>

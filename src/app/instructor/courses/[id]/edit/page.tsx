@@ -45,15 +45,19 @@ export default async function EditCoursePage({
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link
             href="/instructor"
-            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl"
+            className="flex items-center gap-2.5 font-black text-xl"
           >
-            <GraduationCap className="w-8 h-8" />
-            <span className="tracking-tight">
-              EduTech{" "}
-              <span className="text-gray-400 font-medium text-xs ml-1 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full uppercase tracking-widest">
+            <div className="w-9 h-9 rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+              <GraduationCap className="w-5 h-5" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-900 dark:text-white">
+                Learn<span className="text-blue-600 dark:text-blue-400">ify</span>
+              </span>
+              <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
                 Editor
               </span>
-            </span>
+            </div>
           </Link>
           <div className="flex items-center gap-4">
             <ThemeToggle />

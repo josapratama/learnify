@@ -29,7 +29,10 @@ export default function CourseActions({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const handleDelete = async () => {
+    setDeleteError(null);
     if (
       confirm(
         "Apakah Anda yakin ingin menghapus kursus ini? Semua data kurikulum akan hilang.",
@@ -41,10 +44,14 @@ export default function CourseActions({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: courseId }),
         });
-        if (res.ok) router.refresh();
-        else alert("Gagal menghapus kursus");
+        if (res.ok) {
+          router.refresh();
+        } else {
+          setDeleteError("Gagal menghapus kursus");
+        }
       } catch (error) {
         console.error(error);
+        setDeleteError("Terjadi kesalahan jaringan");
       }
     }
   };

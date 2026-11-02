@@ -19,6 +19,12 @@ import { redirect } from "next/navigation";
 import InstructorDashboardHeader from "@/components/InstructorDashboardHeader";
 import CourseActions from "@/components/CourseActions";
 import ThemeToggle from "@/components/ThemeToggle";
+import Footer from "@/components/Footer";
+
+export const metadata = {
+  title: "Dashboard Instruktur | Learnify",
+  description: "Kelola kursus, pantau analitik siswa dan performa pengajaran Anda.",
+};
 
 export default async function InstructorDashboard() {
   const user = await requireValidUser();
@@ -88,28 +94,32 @@ export default async function InstructorDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
-      <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 py-4 px-6 sticky top-0 z-50">
+      <nav className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-4 px-6 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl"
+            className="flex items-center gap-2.5 font-black text-xl"
           >
-            <GraduationCap className="w-8 h-8" />
-            <span className="tracking-tight">
-              EduTech{" "}
-              <span className="text-gray-400 font-medium text-xs ml-1 hidden sm:inline-block bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full uppercase tracking-widest">
+            <div className="w-9 h-9 rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+              <GraduationCap className="w-5 h-5" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-900 dark:text-white">
+                Learn<span className="text-blue-600 dark:text-blue-400">ify</span>
+              </span>
+              <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
                 Instructor
               </span>
-            </span>
+            </div>
           </Link>
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <Link
               href="/dashboard"
-              className="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-2 transition bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-xl"
+              className="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-2 transition bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-xl"
             >
               <ChevronLeft className="w-4 h-4" />{" "}
-              <span className="hidden sm:inline">Mode Siswa</span>
+              <span>Mode Siswa</span>
             </Link>
           </div>
         </div>
@@ -131,11 +141,8 @@ export default async function InstructorDashboard() {
               {totalStudents}
             </h3>
             <div className="flex items-center gap-2 mt-4">
-              <span className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[10px] font-black px-2 py-1 rounded-lg flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" /> +12%
-              </span>
-              <span className="text-gray-400 text-[10px] font-bold uppercase">
-                Bulan ini
+              <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-black px-2.5 py-1 rounded-lg">
+                {instructorCourses.length} Kursus Aktif
               </span>
             </div>
           </div>
@@ -151,11 +158,8 @@ export default async function InstructorDashboard() {
               Rp {totalRevenue.toLocaleString("id-ID")}
             </h3>
             <div className="flex items-center gap-2 mt-4">
-              <span className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[10px] font-black px-2 py-1 rounded-lg flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" /> +8%
-              </span>
-              <span className="text-gray-400 text-[10px] font-bold uppercase">
-                Bulan ini
+              <span className="bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 text-[10px] font-black px-2.5 py-1 rounded-lg">
+                Pembayaran Midtrans
               </span>
             </div>
           </div>
@@ -183,30 +187,38 @@ export default async function InstructorDashboard() {
               <TrendingUp className="w-6 h-6 text-blue-600" /> Analitik
               Pendapatan
             </h2>
-            <div className="h-48 md:h-72 flex items-end gap-2 md:gap-4 px-2">
-              {[40, 65, 45, 80, 55, 90, 75].map((val, i) => (
-                <div
-                  key={i}
-                  className="flex-1 flex flex-col items-center gap-2 md:gap-4 group"
-                >
+            {totalRevenue > 0 ? (
+              <div className="h-48 md:h-72 flex items-end gap-2 md:gap-4 px-2">
+                {[40, 65, 45, 80, 55, 90, 75].map((val, i) => (
                   <div
-                    className="w-full bg-blue-50 dark:bg-blue-900/10 rounded-2xl group-hover:bg-blue-600 dark:group-hover:bg-blue-500 transition-all duration-500 relative flex items-end overflow-hidden"
-                    style={{ height: "100%" }}
+                    key={i}
+                    className="flex-1 flex flex-col items-center gap-2 md:gap-4 group"
                   >
                     <div
-                      className="w-full bg-blue-600 dark:bg-blue-500 rounded-2xl transition-all duration-1000 delay-300"
-                      style={{ height: `${val}%` }}
-                    />
-                    <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white text-[9px] font-black py-1 px-2 rounded-lg opacity-0 group-hover:opacity-100 transition shadow-xl z-20 whitespace-nowrap">
-                      Rp {((val * totalRevenue) / 100).toLocaleString("id-ID")}
+                      className="w-full bg-blue-50 dark:bg-blue-900/10 rounded-2xl group-hover:bg-blue-600 dark:group-hover:bg-blue-500 transition-all duration-500 relative flex items-end overflow-hidden"
+                      style={{ height: "100%" }}
+                    >
+                      <div
+                        className="w-full bg-blue-600 dark:bg-blue-500 rounded-2xl transition-all duration-1000 delay-300"
+                        style={{ height: `${val}%` }}
+                      />
+                      <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white text-[9px] font-black py-1 px-2 rounded-lg opacity-0 group-hover:opacity-100 transition shadow-xl z-20 whitespace-nowrap">
+                        Rp {((val * totalRevenue) / 100).toLocaleString("id-ID")}
+                      </div>
                     </div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest hidden sm:block">
+                      {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"][i]}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest hidden sm:block">
-                    {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"][i]}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-48 md:h-72 flex flex-col items-center justify-center text-center p-6 rounded-2xl border border-dashed border-gray-100 dark:border-gray-800">
+                <DollarSign className="w-10 h-10 text-gray-300 dark:text-gray-700 mb-2" />
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Belum Ada Transaksi Pendapatan</p>
+                <p className="text-xs text-gray-400 mt-1 max-w-sm">Grafik mingguan otomatis terbentuk ketika siswa membeli kursus berbayar Anda.</p>
+              </div>
+            )}
           </div>
 
           <div className="bg-white dark:bg-gray-900 p-6 md:p-8 rounded-[2rem] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800">
@@ -214,20 +226,19 @@ export default async function InstructorDashboard() {
               <MessageSquare className="w-6 h-6 text-indigo-600" /> Aktivitas
               Terbaru
             </h2>
-            <div className="space-y-8">
+            <div className="space-y-6">
               {recentEnrollments.map((en) => (
                 <div key={en.id} className="flex gap-4 group">
-                  <div className="w-12 h-12 rounded-2xl bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 flex items-center justify-center shrink-0 group-hover:rotate-12 transition-transform">
-                    <Users className="w-6 h-6" />
+                  <div className="w-11 h-11 rounded-2xl bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 flex items-center justify-center shrink-0 group-hover:rotate-12 transition-transform">
+                    <Users className="w-5 h-5" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-snug">
                       <span className="font-black text-gray-900 dark:text-white">
                         {en.user.fullName}
                       </span>{" "}
-                      baru saja mendaftar di
+                      mendaftar di{" "}
                       <span className="font-black text-blue-600 dark:text-blue-400">
-                        {" "}
                         {en.courseTitle}
                       </span>
                     </p>
@@ -277,8 +288,8 @@ export default async function InstructorDashboard() {
                   <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-3xl flex items-center justify-center mx-auto mb-4 text-gray-300">
                     <LayoutDashboard className="w-8 h-8" />
                   </div>
-                  <p className="text-sm text-gray-400 font-bold uppercase tracking-widest italic">
-                    Belum ada aktivitas.
+                  <p className="text-gray-400 text-xs font-black uppercase tracking-widest">
+                    Belum ada aktivitas
                   </p>
                 </div>
               )}
@@ -378,6 +389,8 @@ export default async function InstructorDashboard() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }
