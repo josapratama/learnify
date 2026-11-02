@@ -139,10 +139,14 @@ export default async function LearnPage({
           />
           <Link
             href="/"
-            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-lg"
+            className="flex items-center gap-2 font-black text-lg"
           >
-            <GraduationCap className="w-6 h-6" />
-            <span className="hidden sm:block">EduTech</span>
+            <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-xs">
+              <GraduationCap className="w-4 h-4" />
+            </div>
+            <span className="hidden sm:block text-gray-900 dark:text-white">
+              Learn<span className="text-blue-600 dark:text-blue-400">ify</span>
+            </span>
           </Link>
         </div>
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 truncate max-w-[200px] md:max-w-xs hidden sm:block">

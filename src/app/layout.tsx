@@ -4,13 +4,13 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: "EduTech - Platform Belajar Online",
-  description: "Belajar IoT, Programming, dan Teknologi Masa Depan",
+  title: "Learnify - Platform Belajar Online Modern",
+  description: "Belajar IoT, Programming, AI, dan Teknologi Masa Depan",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "EduTech",
+    title: "Learnify",
   },
   other: {
     "mobile-web-app-capable": "yes",

@@ -46,10 +46,14 @@ export default function LoginPage() {
       <div className="flex justify-between items-center px-6 py-4">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl"
+          className="inline-flex items-center gap-2.5 font-black text-xl"
         >
-          <GraduationCap className="w-7 h-7" />
-          <span>EduTech</span>
+          <div className="w-9 h-9 rounded-2xl bg-linear-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+            <GraduationCap className="w-5 h-5" />
+          </div>
+          <span className="text-gray-900 dark:text-white">
+            Learn<span className="text-blue-600 dark:text-blue-400">ify</span>
+          </span>
         </Link>
         <ThemeToggle />
       </div>

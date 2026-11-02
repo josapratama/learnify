@@ -13,8 +13,9 @@ import { requireValidUser } from "@/lib/auth";
 import EnrollButton from "@/components/EnrollButton";
 import ReviewSection from "@/components/ReviewSection";
 import WishlistButton from "@/components/WishlistButton";
-import ThemeToggle from "@/components/ThemeToggle";
 import ShareButton from "@/components/ShareButton";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 export const dynamic = "force-dynamic";
 
@@ -34,8 +35,8 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${course.title} | EduTech`,
-    description: course.description || "Belajar teknologi terbaru di EduTech",
+    title: `${course.title} | Learnify`,
+    description: course.description || "Belajar teknologi terbaru di Learnify",
   };
 }
 
@@ -84,8 +85,21 @@ export default async function CourseDetailPage({
   let isEnrolled = false;
   let userReview = null;
   let isWishlisted = false;
+  let dbUser = null;
 
   if (user) {
+    dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        streak: true,
+        avatarUrl: true,
+      },
+    });
+
     const enrollment = await prisma.enrollment.findUnique({
       where: {
         userId_courseId: { userId: user.id, courseId: course.id },
@@ -104,28 +118,9 @@ export default async function CourseDetailPage({
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors duration-200">
+    <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col transition-colors duration-200">
       {/* Navbar */}
-      <nav className="bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-4 px-6 sticky top-0 z-50 transition-colors duration-200">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl"
-          >
-            <GraduationCap className="w-7 h-7" />
-            <span>EduTech</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <Link
-              href="/"
-              className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
-            >
-              Kembali ke Beranda
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Navbar user={dbUser} />
 
       {/* Course Header */}
       <div className="bg-gray-900 dark:bg-gray-950 border-b border-gray-800 text-white py-10 px-4 md:px-6 transition-colors duration-200">
@@ -170,9 +165,15 @@ export default async function CourseDetailPage({
           </div>
 
           {/* Purchase Card — floats to right on desktop, stacks on mobile */}
-          <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-5 md:p-6 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 transition-colors duration-200 w-full md:w-auto">
-            <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-xl mb-4 flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm font-medium">
-              Preview Kursus
+          <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-5 md:p-6 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 transition-colors duration-200 w-full md:w-auto">
+            <div className="aspect-video bg-linear-to-br from-blue-600 to-indigo-700 rounded-2xl mb-5 flex flex-col items-center justify-center text-white p-4 text-center relative overflow-hidden shadow-inner">
+              <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:12px_12px]" />
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center mb-2 shadow-sm">
+                <PlayCircle className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xs font-black uppercase tracking-wider text-blue-100">
+                {course.category}
+              </span>
             </div>
             <div className="text-2xl md:text-3xl font-bold mb-4 text-gray-900 dark:text-white">
               {course.price === 0
@@ -266,6 +267,8 @@ export default async function CourseDetailPage({
           userReview={userReview}
         />
       </div>
+
+      <Footer />
     </div>
   );
 }

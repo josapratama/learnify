@@ -41,7 +41,7 @@ export default function ShareButton({
 
   const shareTwitter = () => {
     window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Belajar ${title} di EduTech 🚀`)}&url=${encodeURIComponent(url)}`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Belajar ${title} di Learnify 🚀`)}&url=${encodeURIComponent(url)}`,
     );
     if (courseId)
       fetch("/api/share", {

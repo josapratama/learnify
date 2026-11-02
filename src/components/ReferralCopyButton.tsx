@@ -21,8 +21,8 @@ export default function ReferralCopyButton({
   const share = () => {
     if (navigator.share) {
       navigator.share({
-        title: "Belajar di EduTech",
-        text: `Daftar di EduTech pakai kode referralku: ${referralCode}`,
+        title: "Belajar di Learnify",
+        text: `Daftar di Learnify pakai kode referralku: ${referralCode}`,
         url: referralLink,
       });
     } else {

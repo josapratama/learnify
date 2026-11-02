@@ -12,7 +12,13 @@ import {
 import { requireValidUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import ThemeToggle from "@/components/ThemeToggle";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+
+export const metadata = {
+  title: "Profil & Pengaturan | Learnify",
+  description: "Pengaturan akun, profil siswa, dan sertifikat kelulusan Learnify.",
+};
 
 export default async function ProfilePage() {
   const user = await requireValidUser();
@@ -59,28 +65,9 @@ export default async function ProfilePage() {
     .filter((c) => c.progress === 100);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col transition-colors duration-200">
-      {/* Nav */}
-      <nav className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 py-4 px-6 sticky top-0 z-50 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl"
-          >
-            <GraduationCap className="w-7 h-7" />
-            <span>EduTech</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1 transition"
-            >
-              <ChevronLeft className="w-4 h-4" /> Kembali ke Dashboard
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 flex flex-col transition-colors duration-200">
+      {/* Unified Navbar */}
+      <Navbar user={dbUser} />
 
       <div className="flex-1 max-w-5xl mx-auto w-full p-6 md:p-10">
         {/* Profile Header */}
@@ -202,6 +189,8 @@ export default async function ProfilePage() {
           </div>
         )}
       </div>
+
+      <Footer />
     </div>
   );
 }

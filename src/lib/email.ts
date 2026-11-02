@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_for_build");
-const FROM = process.env.RESEND_FROM_EMAIL || "EduTech <noreply@edutech.app>";
+const FROM = process.env.RESEND_FROM_EMAIL || "Learnify <noreply@learnify.app>";
 
 // Helper: kirim email, graceful fail jika API key belum diset
 async function sendEmail(to: string, subject: string, html: string) {
@@ -38,7 +38,7 @@ function wrap(content: string): string {
   return `<div style="${baseStyle}">
     ${content}
     <div style="${footerStyle}">
-      <p>© ${new Date().getFullYear()} EduTech — Platform Belajar Online</p>
+      <p>© ${new Date().getFullYear()} Learnify — Platform Belajar Online Modern</p>
       <p>Jika Anda tidak merasa mendaftar, abaikan email ini.</p>
     </div>
   </div>`;
@@ -48,18 +48,18 @@ function wrap(content: string): string {
 export async function sendWelcomeEmail(to: string, name: string) {
   const html = wrap(`
     <div style="${headerStyle}">
-      <h1 style="color:#fff; margin:0; font-size:28px;">🎓 Selamat Datang di EduTech!</h1>
+      <h1 style="color:#fff; margin:0; font-size:28px;">🎓 Selamat Datang di Learnify!</h1>
     </div>
     <div style="${bodyStyle}">
       <p style="color:#374151; font-size:16px;">Halo <strong>${name}</strong>,</p>
       <p style="color:#6b7280;">Terima kasih sudah bergabung! Akun Anda sudah aktif dan siap digunakan.</p>
-      <p style="color:#6b7280;">Mulai eksplorasi ratusan kursus berkualitas — dari pemula hingga expert.</p>
+      <p style="color:#6b7280;">Mulai eksplorasi puluhan kursus berkualitas — dari pemula hingga expert.</p>
       <a href="${process.env.NEXT_PUBLIC_BASE_URL}" style="${btnStyle}">🚀 Mulai Belajar Sekarang</a>
       <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
       <p style="color:#6b7280; font-size:14px;">💡 <strong>Tips:</strong> Gunakan fitur Learning Path untuk jalur belajar yang terstruktur!</p>
     </div>
   `);
-  return sendEmail(to, "🎓 Selamat Datang di EduTech!", html);
+  return sendEmail(to, "🎓 Selamat Datang di Learnify!", html);
 }
 
 // 2. Konfirmasi pembayaran

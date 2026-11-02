@@ -4,55 +4,66 @@ import {
   Code,
   Cpu,
   Globe,
-  GraduationCap,
-  Search,
-  Star,
-  User,
-  Bell,
+  Sparkles,
+  ArrowRight,
+  TrendingUp,
 } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { requireValidUser } from "@/lib/auth";
-import Image from "next/image";
-import NotificationBell from "@/components/NotificationBell";
-import ThemeToggle from "@/components/ThemeToggle";
 import CourseFilters from "@/components/CourseFilters";
-import LiveSearch from "@/components/LiveSearch";
+import CourseCard from "@/components/CourseCard";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: {
+  searchParams: Promise<{
     q?: string;
     category?: string;
     sort?: string;
     level?: string;
     price?: string;
-  };
+  }>;
 }) {
   const { q, category, sort, level, price } = await searchParams;
   const user = await requireValidUser();
 
+  const dbUser = user
+    ? await prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          streak: true,
+          avatarUrl: true,
+        },
+      })
+    : null;
+
   const categories = [
     {
       name: "Programming",
-      icon: <Code className="w-6 h-6" />,
+      icon: <Code className="w-5 h-5" />,
       count: "12 Kursus",
     },
     {
       name: "Internet of Things",
-      icon: <Cpu className="w-6 h-6" />,
+      icon: <Cpu className="w-5 h-5" />,
       count: "5 Kursus",
     },
     {
       name: "Web Development",
-      icon: <Globe className="w-6 h-6" />,
+      icon: <Globe className="w-5 h-5" />,
       count: "8 Kursus",
     },
     {
       name: "Fundamental",
-      icon: <BookOpen className="w-6 h-6" />,
+      icon: <BookOpen className="w-5 h-5" />,
       count: "4 Kursus",
     },
   ];
@@ -89,258 +100,158 @@ export default async function Home({
       sort === "popular"
         ? { enrollments: { _count: "desc" } }
         : sort === "rating"
-          ? { createdAt: "desc" } // Prisma doesn't support sorting by relation aggregate directly in findMany
+          ? { createdAt: "desc" }
           : { createdAt: "desc" },
   });
 
   return (
-    <main className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-200">
-      {/* Navbar */}
-      <nav className="bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-3 px-4 sticky top-0 z-[100] transition-colors duration-200">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Logo & Mobile Actions */}
-          <div className="flex items-center justify-between w-full md:w-auto">
-            <Link
-              href="/"
-              className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl shrink-0"
-            >
-              <GraduationCap className="w-8 h-8" />
-              <span className="tracking-tight">EduTech</span>
-            </Link>
-
-            <div className="flex items-center gap-2 md:hidden">
-              <ThemeToggle />
-              {user && <NotificationBell />}
-              {!user && (
-                <Link href="/login" className="p-2 text-gray-500">
-                  <User className="w-5 h-5" />
-                </Link>
-              )}
-            </div>
-          </div>
-
-          {/* Search Bar */}
-          <div className="w-full md:max-w-md lg:max-w-lg">
-            <LiveSearch />
-          </div>
-
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-4">
-            <Link
-              href="/learning-paths"
-              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition whitespace-nowrap"
-            >
-              🗺️ Learning Paths
-            </Link>
-            <Link
-              href="/playground"
-              className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition whitespace-nowrap"
-            >
-              ⚡ Playground
-            </Link>
-            <ThemeToggle />
-            {user ? (
-              <>
-                <NotificationBell />
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-5 py-2.5 rounded-2xl font-black hover:scale-105 transition shadow-lg shadow-gray-200 dark:shadow-none text-sm"
-                >
-                  <User className="w-4 h-4" />
-                  <span>Dashboard</span>
-                </Link>
-              </>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link
-                  href="/login"
-                  className="text-gray-600 dark:text-gray-400 font-bold hover:text-blue-600 dark:hover:text-blue-400 transition text-sm px-2"
-                >
-                  Masuk
-                </Link>
-                <Link
-                  href="/register"
-                  className="bg-blue-600 text-white px-6 py-2.5 rounded-2xl font-black hover:bg-blue-700 transition text-sm shadow-lg shadow-blue-100 dark:shadow-none"
-                >
-                  Daftar
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col transition-colors duration-200">
+      {/* Unified Global Navbar */}
+      <Navbar user={dbUser} />
 
       {/* Hero Section */}
-      <section className="relative bg-blue-600 dark:bg-blue-700 text-white overflow-hidden">
-        {/* Background Patterns */}
-        <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none">
-          <div className="absolute top-10 right-10 w-64 h-64 border-4 border-white rounded-full"></div>
-          <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-        </div>
+      <section className="relative overflow-hidden bg-linear-to-b from-blue-600 via-indigo-700 to-indigo-900 text-white py-16 sm:py-24 lg:py-32">
+        {/* Glow & Geometric accents */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
-        <div className="max-w-5xl mx-auto px-6 py-16 md:py-28 lg:py-36 text-center relative z-10">
-          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-6 leading-tight tracking-tight">
-            Kuasai Teknologi, <br className="hidden sm:block" />
-            <span className="text-blue-200">Bangun Masa Depan</span>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          {/* Top Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs sm:text-sm font-black mb-6 text-blue-100 shadow-sm animate-pulse">
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>Platform Pembelajaran Teknologi #1 Modern</span>
+          </div>
+
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black mb-6 leading-[1.15] tracking-tight">
+            Kuasai Keahlian Digital, <br className="hidden sm:inline" />
+            <span className="bg-linear-to-r from-blue-200 via-sky-200 to-indigo-100 bg-clip-text text-transparent">
+              Bangun Portofolio Berkelas
+            </span>
           </h1>
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-10 opacity-90 max-w-2xl mx-auto font-medium">
-            Platform belajar online terpercaya untuk menguasai programming, IoT,
-            dan teknologi terbaru dengan kurikulum industri.
+
+          <p className="text-sm sm:text-lg md:text-xl text-blue-100/90 mb-10 max-w-2xl mx-auto font-medium leading-relaxed">
+            Akses kurikulum terstruktur dalam Web Development, Python, IoT, Cloud, dan AI dengan studi kasus nyata, code playground, dan sertifikat terverifikasi.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 max-w-md mx-auto">
             <Link
               href="#courses"
-              className="w-full sm:w-auto bg-white text-blue-600 px-8 py-4 rounded-2xl font-black hover:shadow-xl transition-all text-sm"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-blue-700 hover:bg-blue-50 px-7 py-3.5 rounded-2xl font-black shadow-xl shadow-blue-900/30 hover:scale-105 transition-all text-sm"
             >
-              Mulai Belajar Sekarang
+              <span>Jelajahi Kursus</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
-              href="/register"
-              className="w-full sm:w-auto bg-blue-500 border border-white/20 text-white px-8 py-4 rounded-2xl font-black hover:bg-blue-400 transition-all text-sm"
+              href="/learning-paths"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/25 text-white px-7 py-3.5 rounded-2xl font-black backdrop-blur-md transition-all text-sm"
             >
-              Daftar Gratis
+              <span>Learning Paths</span>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Filter Section */}
-      <section className="py-12 px-4 md:px-6 bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col gap-8">
-            {/* Categories */}
-            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
+      {/* Filter & Categories Section */}
+      <section className="py-8 px-4 sm:px-6 lg:px-8 bg-gray-50/80 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-800/80 transition-colors duration-200">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Categories Pill Bar */}
+          <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar pb-1">
+            <Link
+              href={`/${level ? `?level=${level}` : ""}${price ? `${level ? "&" : "?"}price=${price}` : ""}${sort ? `${level || price ? "&" : "?"}sort=${sort}` : ""}`}
+              className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap border ${
+                !category
+                  ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
+                  : "bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-blue-500/50 hover:text-blue-600"
+              }`}
+            >
+              Semua Kategori
+            </Link>
+            {categories.map((cat, i) => (
               <Link
-                href={`/${level ? `?level=${level}` : ""}${price ? `${level ? "&" : "?"}price=${price}` : ""}${sort ? `${level || price ? "&" : "?"}sort=${sort}` : ""}`}
-                className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap border ${!category ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100 dark:shadow-none" : "bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-900"}`}
+                key={i}
+                href={`/?category=${encodeURIComponent(cat.name)}${level ? `&level=${level}` : ""}${price ? `&price=${price}` : ""}${sort ? `&sort=${sort}` : ""}`}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap border ${
+                  category === cat.name
+                    ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
+                    : "bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-blue-500/50 hover:text-blue-600"
+                }`}
               >
-                Semua Kategori
+                <span>{cat.name}</span>
               </Link>
-              {categories.map((cat, i) => (
-                <Link
-                  key={i}
-                  href={`/?category=${cat.name}${level ? `&level=${level}` : ""}${price ? `&price=${price}` : ""}${sort ? `&sort=${sort}` : ""}`}
-                  className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap border ${category === cat.name ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100 dark:shadow-none" : "bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-900"}`}
-                >
-                  {cat.name}
-                </Link>
-              ))}
-            </div>
+            ))}
+          </div>
 
-            {/* Advanced Filters */}
-            <div className="w-full">
-              <CourseFilters
-                initialSort={sort}
-                initialLevel={level}
-                initialPrice={price}
-              />
-            </div>
+          {/* Advanced Filter Bar */}
+          <div className="w-full">
+            <CourseFilters
+              initialSort={sort}
+              initialLevel={level}
+              initialPrice={price}
+            />
           </div>
         </div>
       </section>
 
-      {/* Featured Courses */}
+      {/* Courses Grid */}
       <section
         id="courses"
-        className="py-20 px-4 md:px-6 bg-white dark:bg-gray-950 transition-colors duration-200"
+        className="flex-1 py-14 sm:py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-950 transition-colors duration-200"
       >
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+          {/* Header Title & Count */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-3">
             <div>
-              <h2 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tight">
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-widest mb-1.5">
+                <TrendingUp className="w-4 h-4" />
+                <span>Katalog Pilihan</span>
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black text-gray-900 dark:text-white tracking-tight">
                 {q
                   ? `Hasil pencarian untuk "${q}"`
                   : category
                     ? `Kursus ${category}`
-                    : "Kursus Unggulan"}
+                    : "Kursus Unggulan & Terpopuler"}
               </h2>
-              <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium">
+              <p className="text-gray-500 dark:text-gray-400 mt-1.5 text-sm sm:text-base font-medium">
                 {courses.length > 0
-                  ? `Menampilkan ${courses.length} kursus terbaik untuk Anda.`
-                  : "Maaf, tidak ada kursus yang sesuai dengan kriteria Anda."}
+                  ? `Menampilkan ${courses.length} kursus berkualitas tinggi untuk upgrade skill Anda.`
+                  : "Belum ada kursus yang sesuai dengan kombinasi filter yang dipilih."}
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
-            {courses.map((course) => {
-              const totalReviews = course.reviews.length;
-              const avgRating =
-                totalReviews > 0
-                  ? course.reviews.reduce((acc, rev) => acc + rev.rating, 0) /
-                    totalReviews
-                  : 0;
-
-              return (
-                <Link
-                  href={`/courses/${course.slug}`}
-                  key={course.id}
-                  className="group bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 overflow-hidden hover:translate-y-[-8px] transition-all duration-500 flex flex-col h-full shadow-xl shadow-gray-200/50 dark:shadow-none"
-                >
-                  <div className="aspect-[16/10] bg-gray-100 dark:bg-gray-800 relative shrink-0 overflow-hidden">
-                    {course.thumbnailUrl ? (
-                      <Image
-                        src={course.thumbnailUrl}
-                        alt={course.title}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-8 text-center">
-                        <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-3">
-                          <BookOpen className="w-8 h-8 opacity-20" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest opacity-40">
-                          Thumbnail Kursus
-                        </span>
-                      </div>
-                    )}
-                    <div className="absolute top-4 left-4 flex gap-2 z-10">
-                      <span className="bg-white/90 dark:bg-gray-950/90 backdrop-blur-md text-blue-600 dark:text-blue-400 text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest border border-white/20">
-                        {course.level}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-8 flex flex-col flex-1">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-                        {course.category}
-                      </span>
-                      <div className="flex items-center gap-1.5 text-yellow-500 text-xs font-black">
-                        <Star className="w-4 h-4 fill-current" />
-                        <span>{avgRating.toFixed(1)}</span>
-                      </div>
-                    </div>
-                    <h3 className="text-xl font-black mb-3 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition tracking-tight line-clamp-2 leading-tight">
-                      {course.title}
-                    </h3>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm line-clamp-2 mb-6 font-medium leading-relaxed">
-                      {course.description}
-                    </p>
-
-                    <div className="mt-auto pt-6 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-black text-[10px]">
-                          {course.instructor.fullName?.charAt(0) ?? "?"}
-                        </div>
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                          {course.instructor.fullName?.split(" ")[0] ??
-                            "Instruktur"}
-                        </span>
-                      </div>
-                      <div className="text-lg font-black text-blue-600 dark:text-blue-400 tracking-tight">
-                        {course.price === 0
-                          ? "Gratis"
-                          : `Rp ${course.price.toLocaleString("id-ID")}`}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          {/* Grid */}
+          {courses.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              {courses.map((course) => (
+                <CourseCard key={course.id} course={course} />
+              ))}
+            </div>
+          ) : (
+            <div className="py-20 text-center rounded-3xl border border-dashed border-gray-200 dark:border-gray-800 p-8">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="w-8 h-8 opacity-60" />
+              </div>
+              <h3 className="text-lg font-black text-gray-900 dark:text-white mb-1">
+                Tidak ada kursus ditemukan
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+                Coba ubah kata kunci pencarian atau bersihkan filter untuk melihat pilihan kursus lainnya.
+              </p>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-sm shadow-md shadow-blue-500/20"
+              >
+                Reset Semua Filter
+              </Link>
+            </div>
+          )}
         </div>
       </section>
-    </main>
+
+      {/* Global Modern Footer */}
+      <Footer />
+    </div>
   );
 }

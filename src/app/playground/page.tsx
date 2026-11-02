@@ -1,9 +1,15 @@
 import Link from "next/link";
-import { GraduationCap, Code2 } from "lucide-react";
-import ThemeToggle from "@/components/ThemeToggle";
+import { Code2, Sparkles } from "lucide-react";
+import prisma from "@/lib/prisma";
+import { requireValidUser } from "@/lib/auth";
 import CodeEditor from "@/components/CodeEditor";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
-export const metadata = { title: "Code Playground | EduTech" };
+export const metadata = {
+  title: "Code Playground | Learnify",
+  description: "Coba dan eksekusi kode pemrograman langsung di browser Anda.",
+};
 
 const contoh = [
   {
@@ -11,40 +17,39 @@ const contoh = [
     lang: "javascript" as const,
     code: `// Eksplorasi array methods JavaScript
 const produk = [
-  { nama: "Laptop", harga: 8500000 },
-  { nama: "Mouse",  harga: 250000  },
-  { nama: "Monitor",harga: 3200000 },
+  { nama: "Laptop High-End", harga: 15500000 },
+  { nama: "Mechanical Keyboard", harga: 1250000 },
+  { nama: "4K Monitor 27 inch", harga: 4200000 },
 ];
 
-// Filter produk mahal
-const mahal = produk.filter(p => p.harga > 1000000);
-console.log("Produk mahal:", mahal.map(p => p.nama));
+// Filter produk dengan harga di atas 2 juta
+const premium = produk.filter(p => p.harga > 2000000);
+console.log("Produk Premium:", premium.map(p => p.nama));
 
-// Total harga
+// Hitung total belanja
 const total = produk.reduce((sum, p) => sum + p.harga, 0);
-console.log("Total:", "Rp" + total.toLocaleString("id-ID"));`,
+console.log("Total Belanja:", "Rp " + total.toLocaleString("id-ID"));`,
   },
   {
-    title: "JavaScript: Async/Await",
+    title: "JavaScript: Async / Await Fetch Simulation",
     lang: "javascript" as const,
-    code: `// Simulasi fetch data dengan async/await
-async function ambilData(id) {
-  // Simulasi network delay
-  await new Promise(r => setTimeout(r, 100));
-  return { id, nama: "User #" + id, aktif: id % 2 === 0 };
+    code: `// Simulasi asynchronous request
+async function fetchUserStatus(id) {
+  await new Promise(resolve => setTimeout(resolve, 80));
+  return { id, nama: "Developer #" + id, level: "Fullstack Pro" };
 }
 
-async function main() {
-  console.log("Mengambil data...");
-  
-  const users = await Promise.all([1, 2, 3].map(ambilData));
-  users.forEach(u => console.log(u.nama, "-", u.aktif ? "Aktif" : "Nonaktif"));
+async function run() {
+  console.log("Memulai simulasi sinkronisasi data...");
+  const users = await Promise.all([1, 2, 3].map(fetchUserStatus));
+  users.forEach(u => console.log(\`[User \${u.id}] \${u.nama} (\${u.level})\`));
+  console.log("Semua data berhasil dimuat!");
 }
 
-main();`,
+run();`,
   },
   {
-    title: "HTML: Landing Page Sederhana",
+    title: "HTML: Card Modern Learnify",
     lang: "html" as const,
     code: `<!DOCTYPE html>
 <html lang="id">
@@ -53,91 +58,95 @@ main();`,
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 20px;
     }
     .card {
       background: white;
-      border-radius: 20px;
-      padding: 40px;
-      max-width: 400px;
+      padding: 32px;
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      max-width: 380px;
+      width: 100%;
       text-align: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
     }
-    h1 { color: #6366f1; font-size: 2rem; margin-bottom: 10px; }
-    p { color: #6b7280; line-height: 1.6; }
+    h1 { color: #1e1b4b; font-size: 24px; margin-bottom: 8px; font-weight: 800; }
+    p { color: #64748b; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
     button {
-      background: #6366f1;
+      background: #4f46e5;
       color: white;
       border: none;
       padding: 12px 28px;
-      border-radius: 10px;
-      font-size: 1rem;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 14px;
       cursor: pointer;
-      margin-top: 20px;
-      transition: background 0.2s;
+      box-shadow: 0 8px 16px rgba(79,70,229,0.3);
+      transition: all 0.2s;
     }
-    button:hover { background: #4f46e5; }
+    button:hover { background: #4338ca; transform: translateY(-2px); }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>🎓 EduTech</h1>
-    <p>Belajar teknologi dengan cara yang menyenangkan dan interaktif.</p>
-    <button onclick="alert('Selamat Datang!')">Mulai Belajar</button>
+    <h1>🎓 Learnify</h1>
+    <p>Platform belajar online interaktif untuk membangun masa depan teknologi Anda.</p>
+    <button onclick="alert('Selamat Belajar di Learnify!')">Mulai Sekarang</button>
   </div>
 </body>
 </html>`,
   },
 ];
 
-export default function PlaygroundPage() {
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <nav className="bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-4 px-6 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl"
-          >
-            <GraduationCap className="w-7 h-7" /> EduTech
-          </Link>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <Link
-              href="/"
-              className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 transition"
-            >
-              ← Beranda
-            </Link>
-          </div>
-        </div>
-      </nav>
+export default async function PlaygroundPage() {
+  const user = await requireValidUser();
 
-      <div className="max-w-5xl mx-auto px-4 py-12">
-        <div className="flex items-center gap-3 mb-4">
-          <Code2 className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+  const dbUser = user
+    ? await prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          streak: true,
+          avatarUrl: true,
+        },
+      })
+    : null;
+
+  return (
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 flex flex-col transition-colors duration-200">
+      <Navbar user={dbUser} />
+
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-200 dark:border-blue-800 shrink-0">
+            <Code2 className="w-7 h-7" />
+          </div>
           <div>
-            <h1 className="text-4xl font-black text-gray-900 dark:text-white">
-              Code Playground
+            <h1 className="text-2xl sm:text-4xl font-black text-gray-900 dark:text-white tracking-tight">
+              Interactive Code Playground
             </h1>
-            <p className="text-gray-500 dark:text-gray-400">
-              Coba kode langsung di browser — JavaScript, HTML, CSS, dan Python!
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Uji coba dan jalankan potongan kode secara instan langsung dari peramban Anda.
             </p>
           </div>
         </div>
 
         {/* Language badges */}
-        <div className="flex gap-2 flex-wrap mb-10">
-          {["JavaScript", "TypeScript", "HTML", "CSS", "Python (server)"].map(
+        <div className="flex gap-2 flex-wrap mb-8">
+          {["JavaScript", "TypeScript", "HTML", "CSS", "Python (Server)"].map(
             (lang) => (
               <span
                 key={lang}
-                className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-xs font-bold"
+                className="px-3.5 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/80 rounded-xl text-xs font-black"
               >
                 {lang}
               </span>
@@ -146,24 +155,30 @@ export default function PlaygroundPage() {
         </div>
 
         {/* Free editor */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 mb-10">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            ✏️ Editor Bebas
-          </h2>
-          <CodeEditor language="javascript" title="Free Editor" />
+        <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800/80 p-6 sm:p-8 mb-10 shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-500" />
+              <span>Editor Eksplorasi Bebas</span>
+            </h2>
+            <span className="text-xs font-bold text-gray-400">
+              Live Runner
+            </span>
+          </div>
+          <CodeEditor language="javascript" title="Free Workspace" />
         </div>
 
         {/* Contoh */}
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-          📚 Contoh Interaktif
+        <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white mb-6 tracking-tight">
+          📚 Studi Kasus & Contoh Interaktif
         </h2>
         <div className="space-y-6">
           {contoh.map((c) => (
             <div
               key={c.title}
-              className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6"
+              className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800/80 p-6 sm:p-8 shadow-xs"
             >
-              <h3 className="font-bold text-gray-900 dark:text-white mb-2">
+              <h3 className="font-black text-gray-900 dark:text-white text-base sm:text-lg mb-3">
                 {c.title}
               </h3>
               <CodeEditor
@@ -174,7 +189,9 @@ export default function PlaygroundPage() {
             </div>
           ))}
         </div>
-      </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }
