@@ -18,6 +18,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import CourseFilters from "@/components/CourseFilters";
 import LiveSearch from "@/components/LiveSearch";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home({
   searchParams,
 }: {

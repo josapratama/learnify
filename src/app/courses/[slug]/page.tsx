@@ -16,6 +16,8 @@ import WishlistButton from "@/components/WishlistButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import ShareButton from "@/components/ShareButton";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: {

@@ -43,6 +43,9 @@ next-env.d.ts
 dev.db
 dev.db-journal
 
+# bun
+bun.lock*
+
 # IDE
 .vscode/settings.json
 .idea/

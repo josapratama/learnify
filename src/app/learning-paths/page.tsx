@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export const metadata = { title: "Learning Paths | EduTech" };
+export const dynamic = "force-dynamic";
 
 export default async function LearningPathsPage() {
   const paths = await prisma.learningPath.findMany({

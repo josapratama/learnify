@@ -22,7 +22,9 @@ import { seedPhp } from "./seeders/seed-php.ts";
 import { seedLearningPaths } from "./seeders/seed-learning-paths.ts";
 
 const pool = new Pool({
-  connectionString: "postgresql://myuser:mypassword@localhost:5432/edutech",
+  connectionString:
+    process.env.DATABASE_URL ||
+    "postgresql://myuser:mypassword@localhost:5432/edutech",
 });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
