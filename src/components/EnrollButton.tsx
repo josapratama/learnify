@@ -32,33 +32,41 @@ export default function EnrollButton({
       const data = await res.json();
 
       if (res.ok) {
+        // Jika kursus gratis / demo
         if (data.demo) {
           router.push(`/courses/${courseSlug}/learn/${firstLessonSlug}`);
           return;
         }
 
-        if (!data.snapToken) {
-          setError("Gagal memulai pembayaran. Coba lagi.");
+        // Jika mendapatkan checkoutUrl dari PayGateway Hub
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
           return;
         }
 
-        // @ts-ignore
-        window.snap?.pay(data.snapToken, {
-          onSuccess: () => {
-            router.push(`/courses/${courseSlug}/learn/${firstLessonSlug}`);
-          },
-          onPending: () => {
-            setError("Pembayaran sedang diproses. Cek email Anda.");
-            router.refresh();
-          },
-          onError: () => {
-            setError("Pembayaran gagal. Silakan coba lagi.");
-            setLoading(false);
-          },
-          onClose: () => {
-            setLoading(false);
-          },
-        });
+        // Fallback: Legacy Midtrans Snap
+        if (data.snapToken) {
+          // @ts-ignore
+          window.snap?.pay(data.snapToken, {
+            onSuccess: () => {
+              router.push(`/courses/${courseSlug}/learn/${firstLessonSlug}`);
+            },
+            onPending: () => {
+              setError("Pembayaran sedang diproses. Cek email Anda.");
+              router.refresh();
+            },
+            onError: () => {
+              setError("Pembayaran gagal. Silakan coba lagi.");
+              setLoading(false);
+            },
+            onClose: () => {
+              setLoading(false);
+            },
+          });
+          return;
+        }
+
+        setError("Gagal memulai pembayaran. Coba lagi.");
       } else {
         if (res.status === 401) {
           router.push(`/login?from=/courses/${courseSlug}`);
@@ -97,10 +105,13 @@ export default function EnrollButton({
       <button
         onClick={handleEnroll}
         disabled={loading}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition mb-3 flex items-center justify-center gap-2 disabled:opacity-60"
+        className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition mb-3 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer shadow-lg shadow-blue-500/20"
       >
         {loading ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>Mempersiapkan Pembayaran...</span>
+          </>
         ) : (
           <>
             <ShoppingCart className="w-5 h-5" /> Beli Sekarang

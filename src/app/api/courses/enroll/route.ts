@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireValidUser } from "@/lib/auth";
 import { snap } from "@/lib/midtrans";
+import { createPayGatewayInvoice } from "@/lib/payment-gateway";
 
 export async function POST(request: Request) {
   try {
@@ -43,14 +44,102 @@ export async function POST(request: Request) {
       );
     }
 
-    // LOGIKA DEMO MODE: Lewati Midtrans jika diaktifkan
+    // Jika kursus gratis (0 rupiah), langsung aktifkan enrollment
+    if (course.price <= 0) {
+      if (!enrollment) {
+        await prisma.enrollment.create({
+          data: {
+            userId: user.id,
+            courseId: courseId,
+            status: "paid",
+            amount: 0,
+            paymentId: `FREE-${Date.now()}`,
+          },
+        });
+      } else {
+        await prisma.enrollment.update({
+          where: { id: enrollment.id },
+          data: { status: "paid", paymentId: `FREE-${Date.now()}` },
+        });
+      }
+      return NextResponse.json({ demo: true });
+    }
+
+    // 1. Integrasi Utama: Direct Self-Hosted Payment Gateway (QRIS, BCA, Mandiri, BRI, DANA, GoPay)
+    const usePayGateway = process.env.USE_PAYGATEWAY !== "false";
+
+    if (usePayGateway) {
+      const orderId =
+        enrollment?.id ||
+        `ENR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+      if (!enrollment) {
+        enrollment = await prisma.enrollment.create({
+          data: {
+            id: orderId,
+            userId: user.id,
+            courseId: courseId,
+            status: "pending",
+            amount: course.price,
+          },
+        });
+      }
+
+      const baseUrl =
+        process.env.APP_URL ||
+        process.env.NEXT_PUBLIC_BASE_URL ||
+        "https://learnify.josapratama.com";
+
+      const pgResult = await createPayGatewayInvoice({
+        orderId: enrollment.id,
+        amount: course.price,
+        customerName: user.fullName || user.email.split("@")[0],
+        customerEmail: user.email,
+        description: `Beli Kursus: ${course.title}`,
+        metadata: {
+          courseId: course.id,
+          courseSlug: course.slug,
+          userId: user.id,
+          returnUrl: `${baseUrl}/courses/${course.slug}`,
+        },
+      });
+
+      if (!pgResult.success || !pgResult.data?.checkoutUrl) {
+        console.error("PayGateway creation failed:", pgResult);
+        return NextResponse.json(
+          {
+            message:
+              pgResult.message || "Gagal membuat tagihan pembayaran pada gateway.",
+          },
+          { status: 500 },
+        );
+      }
+
+      // Simpan ID transaksi payment gateway
+      await prisma.enrollment.update({
+        where: { id: enrollment.id },
+        data: {
+          paymentId: pgResult.data.id,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        checkoutUrl: pgResult.data.checkoutUrl,
+        orderId: enrollment.id,
+        totalAmount: pgResult.data.totalAmount,
+        uniqueCode: pgResult.data.uniqueCode,
+      });
+    }
+
+    // Fallback: DEMO MODE
     if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
       if (!enrollment) {
         await prisma.enrollment.create({
           data: {
             userId: user.id,
             courseId: courseId,
-            status: "paid", // Langsung dianggap bayar
+            status: "paid",
             amount: course.price,
             paymentId: `DEMO-${Date.now()}`,
           },
@@ -64,7 +153,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ demo: true });
     }
 
-    // Jika menggunakan Midtrans asli
+    // Fallback: Legacy Midtrans
     const orderId =
       enrollment?.id || `ORDER-${Date.now()}-${user.id.slice(0, 4)}`;
 
@@ -114,18 +203,8 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     console.error("Enrollment API Error:", error);
-    // Fallback info jika error Midtrans (misal key salah)
-    if (error.message?.includes("Unauthorized")) {
-      return NextResponse.json(
-        {
-          message:
-            "Midtrans API Key belum dikonfigurasi. Aktifkan DEMO_MODE di .env untuk mencoba pendaftaran.",
-        },
-        { status: 500 },
-      );
-    }
     return NextResponse.json(
-      { message: "Gagal membuat transaksi" },
+      { message: error.message || "Gagal membuat transaksi" },
       { status: 500 },
     );
   }
