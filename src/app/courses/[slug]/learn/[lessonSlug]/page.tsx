@@ -30,160 +30,114 @@ interface CodeEditorConfig {
 
 // Menentukan apakah materi membutuhkan code editor secara kontekstual
 function resolveLessonCodeEditor(
-  course: { title: string; category: string | null },
+  course: { title: string; slug?: string; category: string | null },
   lesson: { title: string; contentType: string; bodyText?: string | null }
 ): CodeEditorConfig | null {
+  // 1. Kuis tidak pernah memunculkan code editor
   if (lesson.contentType === "quiz") return null;
 
-  const courseTitleLower = course.title.toLowerCase();
-  const categoryLower = (course.category || "").toLowerCase();
-  const lessonTitleLower = lesson.title.toLowerCase();
+  const courseTitle = course.title.toLowerCase();
+  const courseSlug = (course.slug || "").toLowerCase();
+  const lessonTitle = lesson.title.toLowerCase();
   const bodyText = lesson.bodyText || "";
 
-  // Kursus non-coding (Git, Docker, Linux, Networking, Security, Design) tidak butuh editor bahasa pemrograman
-  const nonCodingKeywords = [
-    "git",
-    "github",
-    "docker",
-    "linux",
-    "cyber",
-    "security",
-    "jaringan",
-    "design",
-    "figma",
-    "manajemen",
+  // 2. DAFTAR BAHASA YANG DIDUKUNG OLEH CODE RUNNER DI BROWSER KITA
+  // Hanya kursus yang secara eksplisit mengajarkan bahasa berikut yang didukung:
+  let supportedLang: "javascript" | "python" | "sql" | "html" | null = null;
+
+  if (courseSlug.includes("python") || courseTitle.includes("python")) {
+    supportedLang = "python";
+  } else if (courseSlug.includes("javascript") || courseTitle.includes("javascript")) {
+    supportedLang = "javascript";
+  } else if (courseSlug.includes("typescript") || courseTitle.includes("typescript")) {
+    supportedLang = "javascript";
+  } else if (courseSlug.includes("sql") || courseTitle.includes("sql")) {
+    supportedLang = "sql";
+  } else if (
+    (courseSlug.includes("html") || courseTitle.includes("html") || courseSlug.includes("css") || courseTitle.includes("css")) &&
+    !courseSlug.includes("php") &&
+    !courseSlug.includes("laravel")
+  ) {
+    supportedLang = "html";
+  }
+
+  // Jika BUKAN kursus dengan bahasa runner di atas (misal: Laravel, PHP, Git, Docker, Linux, C++, Cybersecurity, IoT):
+  // JANGAN PERNAH TAMPILKAN CODE EDITOR!
+  if (!supportedLang) {
+    return null;
+  }
+
+  // 3. MATERI TEORI, KONSEPTUAL, PENGENALAN, SETUP, ARSITEKTUR
+  // Materi-materi ini murni bacaan/pemahaman konsep, BUKAN tempat latihan koding
+  const theoryPatterns = [
+    /\bapa itu\b/i,
+    /\bpengenalan\b/i,
+    /\bmengenal\b/i,
+    /\bsejarah\b/i,
+    /\bkonsep\b/i,
+    /\barsitektur\b/i,
+    /\binstalasi\b/i,
+    /\bpersiapan\b/i,
+    /\bsetup\b/i,
+    /\boverview\b/i,
+    /\broadmap\b/i,
+    /\bkesimpulan\b/i,
+    /\brangkuman\b/i,
+    /\bpenutup\b/i,
+    /\bteori\b/i,
+    /\bkenapa\b/i,
+    /\bmengapa\b/i,
+    /\bstruktur proyek\b/i,
+    /\bkonfigurasi\b/i,
+    /\baturan\b/i,
+    /\bmindset\b/i,
+    /\bfondasi\b/i,
   ];
-  const isPrimarilyNonCodingCourse = nonCodingKeywords.some(
-    (kw) => courseTitleLower.includes(kw) || categoryLower.includes(kw)
+
+  const isTheoryLesson = theoryPatterns.some((pattern) => pattern.test(lessonTitle));
+  if (isTheoryLesson) {
+    return null;
+  }
+
+  // 4. HANYA MUNCUL DI MATERI LATIHAN / PRAKTIK KODING AKTIF
+  // Siswa membutuhkan editor saat ada instruksi tugas, latihan, studi kasus, atau praktik langsung
+  const isExplicitPractice = /\b(latihan|praktik|hands-on|tugas|tantangan|studi kasus|menulis kode|coding|playground|challenge)\b/i.test(
+    lessonTitle
   );
 
-  if (isPrimarilyNonCodingCourse) return null;
+  const hasPracticeSectionInBody = /(?:##|###)\s*(?:💻|⚡)?\s*(?:Latihan|Praktik|Tantangan|Coding Challenge|Tugas Praktik)/i.test(
+    bodyText
+  );
 
-  // Tentukan bahasa editor yang relevan
-  let detectedLang: "javascript" | "python" | "sql" | "html" | null = null;
-  if (courseTitleLower.includes("python") || categoryLower.includes("python")) {
-    detectedLang = "python";
-  } else if (
-    courseTitleLower.includes("sql") ||
-    categoryLower.includes("database") ||
-    categoryLower.includes("sql")
-  ) {
-    detectedLang = "sql";
-  } else if (
-    courseTitleLower.includes("html") ||
-    courseTitleLower.includes("css") ||
-    categoryLower.includes("frontend")
-  ) {
-    detectedLang = "html";
-  } else if (
-    courseTitleLower.includes("javascript") ||
-    courseTitleLower.includes("typescript") ||
-    courseTitleLower.includes("react") ||
-    courseTitleLower.includes("next") ||
-    categoryLower.includes("web")
-  ) {
-    detectedLang = "javascript";
-  } else if (categoryLower.includes("programming")) {
-    if (bodyText.includes("```python") || bodyText.includes("def ") || bodyText.includes("print(")) {
-      detectedLang = "python";
-    } else if (bodyText.includes("```javascript") || bodyText.includes("```js") || bodyText.includes("console.log")) {
-      detectedLang = "javascript";
-    } else if (bodyText.includes("```sql") || bodyText.includes("SELECT ")) {
-      detectedLang = "sql";
+  // Jika bukan materi latihan/praktik eksplisit, jangan munculkan editor
+  if (!isExplicitPractice && !hasPracticeSectionInBody) {
+    return null;
+  }
+
+  // 5. AMBIL KODE LATIHAN YANG BENAR (BUKAN DIAGRAM ATAU COMMAND TERMINAL)
+  let initialCode: string | undefined = undefined;
+
+  // Cari blok kode yang secara spesifik memiliki tag bahasa yang didukung (```python, ```javascript, ```js, ```sql)
+  const explicitCodeRegex = new RegExp(
+    `\`\`\`(?:${supportedLang}|js|py)\\n([\\s\\S]*?)\`\`\``,
+    "i"
+  );
+  const match = bodyText.match(explicitCodeRegex);
+
+  if (match && match[1] && match[1].trim().length > 10) {
+    const snippet = match[1].trim();
+    // Validasi bahwa snippet adalah kode pemrograman valid (bukan sekadar diagram ASCII atau teks narasi)
+    const looksLikeRealCode = /(?:def\s|print\(|const\s|let\s|var\s|function\s|console\.log|SELECT\s|CREATE\s|<[a-z]+>)/i.test(
+      snippet
+    );
+    if (looksLikeRealCode) {
+      initialCode = snippet;
     }
   }
 
-  if (!detectedLang) return null;
-
-  // Filter: materi teori/konseptual/intro tidak memerlukan editor
-  const theoryKeywords = [
-    "apa itu",
-    "pengenalan",
-    "mengenal",
-    "sejarah",
-    "konsep",
-    "arsitektur",
-    "instalasi",
-    "persiapan",
-    "setup",
-    "overview",
-    "roadmap",
-    "kesimpulan",
-    "rangkuman",
-    "penutup",
-    "teori",
-    "kenapa",
-    "mengapa",
-    "struktur proyek",
-    "konfigurasi",
-    "aturan",
-    "mindset",
-  ];
-  const isTheoryLesson = theoryKeywords.some((kw) => lessonTitleLower.includes(kw));
-
-  // Materi eksplisit praktik / hands-on coding
-  const practiceKeywords = [
-    "perulangan",
-    "loop",
-    "while",
-    "for ",
-    "percabangan",
-    "pengkondisian",
-    "if",
-    "else",
-    "kondisi",
-    "fungsi",
-    "function",
-    "variabel",
-    "tipe data",
-    "array",
-    "list",
-    "object",
-    "dictionary",
-    "operator",
-    "manipulasi",
-    "studi kasus",
-    "praktik",
-    "latihan",
-    "hands-on",
-    "proyek",
-    "algoritma",
-    "query",
-    "kalkulator",
-    "class",
-    "oop",
-    "coding",
-    "menulis kode",
-  ];
-  const isExplicitPractice = practiceKeywords.some((kw) => lessonTitleLower.includes(kw));
-
-  // Cek apakah materi memiliki contoh blok kode yang bisa dijalankan
-  const hasExecutableCodeInBody =
-    bodyText.includes(`\`\`\`${detectedLang}`) ||
-    (detectedLang === "javascript" && bodyText.includes("```js")) ||
-    (detectedLang === "python" && bodyText.includes("```py"));
-
-  // Jika teori murni dan bukan latihan, sembunyikan editor
-  if (isTheoryLesson && !isExplicitPractice) {
-    return null;
-  }
-
-  // Hanya tampilkan jika memang materi praktik atau artikel memiliki contoh kode interaktif
-  if (!isExplicitPractice && !hasExecutableCodeInBody) {
-    return null;
-  }
-
-  // Ambil cuplikan kode dari artikel jika ada agar latihan relevan dengan materi
-  let initialCode: string | undefined = undefined;
-  const codeBlockRegex = new RegExp(`\`\`\`(?:${detectedLang}|js|py)?\\n([\\s\\S]*?)\`\`\``);
-  const match = bodyText.match(codeBlockRegex);
-  if (match && match[1] && match[1].trim().length > 10) {
-    initialCode = match[1].trim();
-  }
-
   return {
-    language: detectedLang,
-    initialCode,
+    language: supportedLang,
+    initialCode: initialCode || undefined,
   };
 }
 
@@ -530,10 +484,10 @@ export default async function LearnPage({
                   <div className="px-5 py-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                     <div>
                       <p className="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-2">
-                        ⚡ Coba Kode Sendiri
+                        💻 Latihan / Praktik Koding
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        Eksperimen dan latihan langsung di sini
+                        Tulis dan uji kode latihan Anda di sini
                       </p>
                     </div>
                     <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">

@@ -31,7 +31,7 @@ Framework itu kayak opsi kedua. **Laravel adalah "cetak biru + material siap pak
 
 Laravel menggunakan pola **MVC (Model-View-Controller)**. Ini cara membagi tanggung jawab kode:
 
-\`\`\`
+\`\`\`text
 REQUEST DARI USER
        ↓
    CONTROLLER              ← Yang "mengatur lalu lintas"
