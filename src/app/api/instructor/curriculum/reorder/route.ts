@@ -94,6 +94,9 @@ export async function POST(req: Request) {
                 contentType: lessonData.contentType || "article",
                 orderIndex: j + 1,
                 sectionId: section.id,
+                videoUrl: lessonData.videoUrl || null,
+                bodyText: lessonData.bodyText || null,
+                isPreview: Boolean(lessonData.isPreview),
               },
             });
           } else {
@@ -104,8 +107,9 @@ export async function POST(req: Request) {
                 orderIndex: j + 1,
                 sectionId: section.id, // Support moving between sections
                 contentType: lessonData.contentType,
-                videoUrl: lessonData.videoUrl,
-                bodyText: lessonData.bodyText,
+                videoUrl: lessonData.videoUrl || null,
+                bodyText: lessonData.bodyText || null,
+                isPreview: Boolean(lessonData.isPreview),
               },
             });
           }

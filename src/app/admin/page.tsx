@@ -150,9 +150,9 @@ export default async function AdminPage() {
               desc: `${totalCourses} kursus`,
             },
             {
-              href: "/admin/learning-paths",
+              href: "/learning-paths",
               label: "Learning Paths",
-              desc: "Kelola jalur belajar",
+              desc: "Kurikulum jalur belajar",
             },
             {
               href: "/admin/transactions",

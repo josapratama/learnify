@@ -20,6 +20,8 @@ import {
   Globe,
   Sparkles,
   AlertTriangle,
+  Eye,
+  Lock,
 } from "lucide-react";
 import QuizEditor from "./QuizEditor";
 import { useRouter } from "next/navigation";
@@ -32,6 +34,7 @@ interface Lesson {
   orderIndex: number;
   videoUrl?: string | null;
   bodyText?: string | null;
+  isPreview?: boolean;
 }
 
 interface Section {
@@ -575,6 +578,39 @@ export default function CurriculumEditor({
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {/* Free Preview Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newSections = [...sections];
+                          newSections[sIndex].lessons[lIndex].isPreview =
+                            !newSections[sIndex].lessons[lIndex].isPreview;
+                          setSections(newSections);
+                        }}
+                        className={`text-xs px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition border cursor-pointer ${
+                          lesson.isPreview
+                            ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                            : "bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 hover:text-gray-600"
+                        }`}
+                        title={
+                          lesson.isPreview
+                            ? "Materi ini dapat diakses gratis sebagai pratinjau"
+                            : "Materi ini terkunci untuk siswa terdaftar"
+                        }
+                      >
+                        {lesson.isPreview ? (
+                          <>
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Gratis</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3.5 h-3.5" />
+                            <span>Terkunci</span>
+                          </>
+                        )}
+                      </button>
+
                       <select
                         value={lesson.contentType}
                         onChange={(e) => {
@@ -732,6 +768,7 @@ export default function CurriculumEditor({
                     orderIndex: section.lessons.length + 1,
                     videoUrl: "",
                     bodyText: "",
+                    isPreview: false,
                   };
                   const newSections = [...sections];
                   newSections[sIndex].lessons.push(newLesson);

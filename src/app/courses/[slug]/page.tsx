@@ -66,7 +66,12 @@ export default async function CourseDetailPage({
       sections: {
         orderBy: { orderIndex: "asc" },
         include: {
-          lessons: { orderBy: { orderIndex: "asc" } },
+          lessons: {
+            orderBy: { orderIndex: "asc" },
+            include: {
+              progress: user ? { where: { userId: user.id } } : false,
+            },
+          },
         },
       },
     },
@@ -86,7 +91,13 @@ export default async function CourseDetailPage({
       ? course.reviews.reduce((acc, rev) => acc + rev.rating, 0) / totalReviews
       : 0;
 
-  const firstLessonSlug = course.sections[0]?.lessons[0]?.slug || "";
+  const allLessons = course.sections.flatMap((s) => s.lessons);
+  const nextUncompleted = allLessons.find(
+    (l) => !l.progress?.some((p: any) => p.isCompleted),
+  );
+  const smartLessonSlug = (nextUncompleted || allLessons[0])?.slug || "";
+  const firstLessonSlug =
+    smartLessonSlug || course.sections[0]?.lessons[0]?.slug || "";
 
   let isEnrolled = false;
   let userReview = null;
