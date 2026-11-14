@@ -19,6 +19,7 @@ import {
   Award,
   Sparkles,
   BookOpen,
+  Heart,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
@@ -73,7 +74,7 @@ export default function Navbar({ user, showSearch = true }: NavbarProps) {
   };
 
   const navLinks = [
-    { href: "/#courses", label: "Katalog Kursus", icon: BookOpen },
+    { href: "/courses", label: "Katalog Kursus", icon: BookOpen },
     { href: "/learning-paths", label: "Learning Paths", icon: Compass },
     { href: "/playground", label: "Playground", icon: Code2 },
   ];
@@ -204,6 +205,13 @@ export default function Navbar({ user, showSearch = true }: NavbarProps) {
                           >
                             <FileText className="w-4 h-4 text-emerald-500" />
                             Catatan Saya
+                          </Link>
+                          <Link
+                            href="/wishlist"
+                            className="flex items-center gap-3 px-3.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition"
+                          >
+                            <Heart className="w-4 h-4 text-rose-500" />
+                            Wishlist Saya
                           </Link>
                           <Link
                             href="/profile"
@@ -405,6 +413,17 @@ export default function Navbar({ user, showSearch = true }: NavbarProps) {
                       <div className="flex items-center gap-3">
                         <FileText className="w-5 h-5 text-emerald-500" />
                         <span>Catatan Saya</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                    </Link>
+                    <Link
+                      href="/wishlist"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Heart className="w-5 h-5 text-rose-500" />
+                        <span>Wishlist Saya</span>
                       </div>
                       <ChevronRight className="w-4 h-4 text-gray-400" />
                     </Link>

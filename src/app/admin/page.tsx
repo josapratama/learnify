@@ -37,7 +37,7 @@ export default async function AdminPage() {
     }),
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: 100,
       select: {
         id: true,
         fullName: true,

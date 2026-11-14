@@ -60,7 +60,7 @@ export default async function ProfilePage() {
       const progress =
         allLessons.length > 0 ? (completedCount / allLessons.length) * 100 : 0;
 
-      return { ...en.course, progress, enrolledAt: en.enrolledAt };
+      return { ...en.course, enrollmentId: en.id, progress, enrolledAt: en.enrolledAt };
     })
     .filter((c) => c.progress === 100);
 
@@ -145,8 +145,8 @@ export default async function ProfilePage() {
                   {course.title}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 flex items-center gap-1">
-                  <Calendar className="w-4 h-4" /> Lulus pada{" "}
-                  {new Date().toLocaleDateString("id-ID", {
+                  <Calendar className="w-4 h-4" /> Diselesaikan pada{" "}
+                  {new Date(course.enrolledAt).toLocaleDateString("id-ID", {
                     day: "numeric",
                     month: "long",
                     year: "numeric",
@@ -154,9 +154,13 @@ export default async function ProfilePage() {
                 </p>
 
                 <div className="mt-auto flex gap-3">
-                  <button className="flex-1 bg-gray-900 dark:bg-white dark:text-gray-900 text-white py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-800 dark:hover:bg-gray-100 transition">
-                    <Download className="w-4 h-4" /> Download PDF
-                  </button>
+                  <Link
+                    href={`/certificate/${course.enrollmentId}`}
+                    className="flex-1 bg-gray-900 dark:bg-white dark:text-gray-900 text-white py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-800 dark:hover:bg-gray-100 transition shadow-sm"
+                  >
+                    <Award className="w-4 h-4 text-amber-500" />
+                    <span>Lihat & Cetak PDF</span>
+                  </Link>
                   <Link
                     href={`/courses/${course.slug}`}
                     className="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"

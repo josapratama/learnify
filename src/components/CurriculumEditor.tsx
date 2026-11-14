@@ -52,9 +52,9 @@ export default function CurriculumEditor({
   initialSections: any[];
   courseId: string;
   initialIsPublished: boolean;
-  courseTitle?: string;
-  courseCategory?: string;
-  courseLevel?: string;
+  courseTitle?: string | null;
+  courseCategory?: string | null;
+  courseLevel?: string | null;
 }) {
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [isPublished, setIsPublished] = useState(initialIsPublished);

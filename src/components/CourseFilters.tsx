@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 interface CourseFiltersProps {
   initialSort?: string;
@@ -14,6 +14,7 @@ export default function CourseFilters({
   initialPrice,
 }: CourseFiltersProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const updateFilter = (key: string, value: string) => {
@@ -23,7 +24,8 @@ export default function CourseFilters({
     } else {
       params.delete(key);
     }
-    router.push(`/?${params.toString()}`);
+    const queryString = params.toString();
+    router.push(queryString ? `${pathname}?${queryString}` : pathname);
   };
 
   return (

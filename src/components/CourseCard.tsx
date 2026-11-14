@@ -19,7 +19,7 @@ export interface CourseCardData {
   title: string;
   slug: string;
   description?: string | null;
-  category: string;
+  category?: string | null;
   level: string;
   price: number;
   thumbnailUrl?: string | null;
@@ -35,7 +35,7 @@ export interface CourseCardData {
 }
 
 // Helper untuk visual gradient & ikon berdasarkan kategori/judul kursus
-function getCategoryVisual(category: string, title: string) {
+function getCategoryVisual(category: string | null | undefined, title: string) {
   const cat = (category || "").toLowerCase();
   const t = (title || "").toLowerCase();
 

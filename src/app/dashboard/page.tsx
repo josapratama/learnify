@@ -14,12 +14,14 @@ import {
   Trophy,
   Zap,
   Medal,
+  Heart,
 } from "lucide-react";
 import { requireValidUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LogoutButton from "@/components/LogoutButton";
+import DashboardCoursesList from "./DashboardCoursesList";
 
 export const metadata = {
   title: "Dashboard Siswa | Learnify",
@@ -237,6 +239,13 @@ export default async function DashboardPage() {
                   <span>Catatan Saya</span>
                 </Link>
                 <Link
+                  href="/wishlist"
+                  className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60 rounded-2xl font-bold transition text-sm"
+                >
+                  <Heart className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span>Wishlist Kursus</span>
+                </Link>
+                <Link
                   href="/profile"
                   className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60 rounded-2xl font-bold transition text-sm"
                 >
@@ -336,7 +345,7 @@ export default async function DashboardPage() {
                 </p>
               </div>
               <Link
-                href="/#courses"
+                href="/courses"
                 className="hidden sm:inline-flex items-center gap-1.5 text-xs font-black text-blue-600 dark:text-blue-400 hover:underline"
               >
                 <span>Cari Kursus Baru</span>
@@ -344,128 +353,7 @@ export default async function DashboardPage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {enrollments.length > 0 ? (
-                enrollments.map((en) => {
-                  const lessons = en.course.sections.flatMap((s) => s.lessons);
-                  const totalLessons = lessons.length;
-                  const completedLessons = lessons.filter(
-                    (l) => l.progress.length > 0 && l.progress[0].isCompleted,
-                  ).length;
-                  const progressPercent =
-                    totalLessons > 0
-                      ? Math.round((completedLessons / totalLessons) * 100)
-                      : 0;
-
-                  return (
-                    <div
-                      key={en.id}
-                      className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
-                    >
-                      {/* Top Accent Strip & Category */}
-                      <div className="p-6 pb-0">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                            {en.course.category}
-                          </span>
-                          <span className="text-xs font-bold text-gray-400 dark:text-gray-500">
-                            {completedLessons} / {totalLessons} Selesai
-                          </span>
-                        </div>
-
-                        <h3 className="font-black text-base sm:text-lg text-gray-900 dark:text-white line-clamp-2 leading-snug mb-2">
-                          {en.course.title}
-                        </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
-                          Instruktur: {en.course.instructor?.fullName || "Learnify Mentor"}
-                        </p>
-                      </div>
-
-                      {/* Progress bar & CTA */}
-                      <div className="p-6 pt-0 mt-auto">
-                        <div className="mb-5">
-                          <div className="flex justify-between items-center text-xs font-bold mb-2">
-                            <span
-                              className={
-                                progressPercent === 100
-                                  ? "text-emerald-600 dark:text-emerald-400"
-                                  : "text-blue-600 dark:text-blue-400"
-                              }
-                            >
-                              {progressPercent === 100
-                                ? "Telah Selesai"
-                                : "Progres Belajar"}
-                            </span>
-                            <span className="text-sm font-black text-gray-900 dark:text-white">
-                              {progressPercent}%
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-100 dark:bg-gray-800 h-2.5 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full transition-all duration-700 ease-out rounded-full ${
-                                progressPercent === 100
-                                  ? "bg-linear-to-r from-emerald-500 to-green-600"
-                                  : "bg-linear-to-r from-blue-500 to-indigo-600"
-                              }`}
-                              style={{ width: `${progressPercent}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-2.5">
-                          <Link
-                            href={`/courses/${en.course.slug}/learn/${en.course.sections[0]?.lessons[0]?.slug || ""}`}
-                            className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black transition-all ${
-                              progressPercent === 100
-                                ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800"
-                                : "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20"
-                            }`}
-                          >
-                            <span>
-                              {progressPercent === 100
-                                ? "Pelajari Ulang"
-                                : progressPercent > 0
-                                  ? "Lanjutkan Belajar"
-                                  : "Mulai Belajar"}
-                            </span>
-                            <ChevronRight className="w-4 h-4" />
-                          </Link>
-
-                          {progressPercent === 100 && (
-                            <Link
-                              href={`/certificate/${en.id}`}
-                              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black bg-linear-to-r from-amber-400 to-orange-500 text-white hover:opacity-95 shadow-md shadow-amber-500/20 transition-all"
-                            >
-                              <Award className="w-4 h-4" />
-                              <span>Lihat Sertifikat Kelulusan</span>
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="col-span-full bg-white dark:bg-gray-900 p-12 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800 text-center">
-                  <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <BookOpen className="w-7 h-7" />
-                  </div>
-                  <h3 className="text-lg font-black text-gray-900 dark:text-white mb-1.5">
-                    Belum Ada Kursus Terdaftar
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-                    Jelajahi beragam katalog kursus pilihan kami dan mulai tingkatkan keahlian teknologi Anda hari ini.
-                  </p>
-                  <Link
-                    href="/#courses"
-                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-wider shadow-md shadow-blue-500/20 transition"
-                  >
-                    <span>Jelajahi Katalog Kursus</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              )}
-            </div>
+            <DashboardCoursesList enrollments={enrollments as any} />
 
             {/* Gamification Rules Banner */}
             <div className="mt-8 bg-linear-to-r from-amber-500/10 via-orange-500/10 to-blue-500/10 border border-amber-200/60 dark:border-amber-800/40 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6">

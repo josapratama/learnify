@@ -84,32 +84,17 @@ export async function POST(request: Request) {
       },
     });
 
-    // Update payment record if exists
+    // Log transaction
     try {
-      await prisma.payment.upsert({
-        where: { enrollmentId: order_id },
-        update: {
-          status:
-            dbStatus === "paid"
-              ? "SUCCESS"
-              : dbStatus === "cancelled"
-                ? "FAILED"
-                : "PENDING",
-        },
-        create: {
-          enrollmentId: order_id,
-          amount: Number(gross_amount) || 0,
-          status:
-            dbStatus === "paid"
-              ? "SUCCESS"
-              : dbStatus === "cancelled"
-                ? "FAILED"
-                : "PENDING",
-          paymentMethod: payment_type || "midtrans",
+      await prisma.transactionLog.create({
+        data: {
+          orderId: order_id,
+          status: dbStatus,
+          payload: body,
         },
       });
-    } catch (paymentErr) {
-      console.warn("Payment upsert warning:", paymentErr);
+    } catch (logErr) {
+      console.warn("Could not log transaction:", logErr);
     }
 
     // Notify User on Success

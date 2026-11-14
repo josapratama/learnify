@@ -34,19 +34,14 @@ export async function POST(req: Request) {
       where: { instructorId: user.id },
       include: {
         enrollments: {
-          include: {
-            payment: true,
-          },
+          where: { status: "paid" },
         },
       },
     });
 
     const totalRevenue = instructorCourses.reduce((acc, c) => {
-      const courseRev = c.enrollments.reduce((sum, en) => {
-        if (en.payment && en.payment.status === "SUCCESS") {
-          return sum + en.payment.amount;
-        }
-        return sum;
+      const courseRev = c.enrollments.reduce((sum: number, en) => {
+        return sum + (en.amount || c.price || 0);
       }, 0);
       return acc + courseRev;
     }, 0);
