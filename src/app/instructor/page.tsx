@@ -21,6 +21,7 @@ import CourseActions from "@/components/CourseActions";
 import ThemeToggle from "@/components/ThemeToggle";
 import Footer from "@/components/Footer";
 import InstructorPayoutModal from "@/components/InstructorPayoutModal";
+import InstructorCoursesTable from "./InstructorCoursesTable";
 
 export const metadata = {
   title: "Dashboard Instruktur | Learnify",
@@ -299,96 +300,20 @@ export default async function InstructorDashboard() {
           </div>
         </div>
 
-        {/* Course List */}
-        <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden">
-          <div className="p-6 md:p-8 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-            <h2 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-              Kursus Anda
-            </h2>
-            <Link
-              href="#"
-              className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest hover:underline"
-            >
-              Lihat Semua
-            </Link>
+        {/* Course List & Interactive Table */}
+        <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-6 md:p-8">
+          <div className="mb-6 flex justify-between items-center">
+            <div>
+              <h2 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white tracking-tight">
+                Manajemen Kursus Saya
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Kelola status publikasi kurikulum, pantau pendaftar, dan ekspor data siswa.
+              </p>
+            </div>
           </div>
-          {/* Scrollable table wrapper for small screens */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[600px]">
-              <thead className="bg-gray-50/50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-[0.15em]">
-                <tr>
-                  <th className="px-6 md:px-8 py-4 md:py-5">Kursus</th>
-                  <th className="px-6 md:px-8 py-4 md:py-5">Status</th>
-                  <th className="px-6 md:px-8 py-4 md:py-5 text-center">
-                    Siswa
-                  </th>
-                  <th className="px-6 md:px-8 py-4 md:py-5">Harga</th>
-                  <th className="px-6 md:px-8 py-4 md:py-5 text-center">
-                    Rating
-                  </th>
-                  <th className="px-6 md:px-8 py-4 md:py-5 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {instructorCourses.map((course) => (
-                  <tr
-                    key={course.id}
-                    className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors group"
-                  >
-                    <td className="px-6 md:px-8 py-5 md:py-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-sm shrink-0 shadow-lg shadow-blue-100 dark:shadow-none group-hover:scale-110 transition-transform">
-                          {course.title.charAt(0)}
-                        </div>
-                        <span className="font-black text-gray-900 dark:text-white text-sm line-clamp-1 tracking-tight max-w-[120px] md:max-w-none">
-                          {course.title}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 md:px-8 py-5 md:py-6">
-                      <span
-                        className={`text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest whitespace-nowrap ${course.isPublished ? "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border border-green-100 dark:border-green-800" : "bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 border border-yellow-100 dark:border-yellow-800"}`}
-                      >
-                        {course.isPublished ? "Published" : "Draft"}
-                      </span>
-                    </td>
-                    <td className="px-6 md:px-8 py-5 md:py-6 text-center text-sm text-gray-700 dark:text-gray-300 font-black">
-                      {course.enrollments.length}
-                    </td>
-                    <td className="px-6 md:px-8 py-5 md:py-6 text-sm text-gray-900 dark:text-white font-black tracking-tight whitespace-nowrap">
-                      Rp {course.price.toLocaleString("id-ID")}
-                    </td>
-                    <td className="px-6 md:px-8 py-5 md:py-6">
-                      <div className="flex items-center justify-center gap-1.5 text-yellow-500 font-black text-sm">
-                        <Star className="w-4 h-4 fill-current" />
-                        {course.reviews.length > 0
-                          ? (
-                              course.reviews.reduce((a, b) => a + b.rating, 0) /
-                              course.reviews.length
-                            ).toFixed(1)
-                          : "5.0"}
-                      </div>
-                    </td>
-                    <td className="px-6 md:px-8 py-5 md:py-6 text-right">
-                      <div className="flex justify-end gap-2">
-                        <Link
-                          href={`/instructor/courses/${course.id}/edit`}
-                          className="p-2.5 bg-gray-50 dark:bg-gray-800 hover:bg-blue-600 dark:hover:bg-blue-500 hover:text-white rounded-xl text-gray-400 dark:text-gray-500 transition-all shadow-sm"
-                          title="Edit Kurikulum"
-                        >
-                          <Settings className="w-4 h-4 md:w-5 md:h-5" />
-                        </Link>
-                        <CourseActions
-                          courseId={course.id}
-                          courseSlug={course.slug}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+
+          <InstructorCoursesTable courses={instructorCourses as any} />
         </div>
       </div>
 

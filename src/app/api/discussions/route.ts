@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireValidUser } from "@/lib/auth";
+import { getCurrentUser, requireValidUser } from "@/lib/auth";
 import { sendDiscussionReplyEmail } from "@/lib/email";
 
 export async function GET(req: Request) {
@@ -14,13 +14,17 @@ export async function GET(req: Request) {
     );
   }
 
+  const currentUser = await getCurrentUser();
+
   const discussions = await prisma.discussion.findMany({
     where: { lessonId, parentId: null },
     include: {
       user: { select: { fullName: true, avatarUrl: true } },
+      likes: { select: { userId: true } },
       replies: {
         include: {
           user: { select: { fullName: true, avatarUrl: true } },
+          likes: { select: { userId: true } },
         },
         orderBy: { createdAt: "asc" },
       },
@@ -28,7 +32,24 @@ export async function GET(req: Request) {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(discussions);
+  const formatted = discussions.map((d) => ({
+    id: d.id,
+    content: d.content,
+    createdAt: d.createdAt,
+    user: d.user,
+    likeCount: d.likes.length,
+    hasLiked: currentUser ? d.likes.some((l) => l.userId === currentUser.id) : false,
+    replies: d.replies.map((r) => ({
+      id: r.id,
+      content: r.content,
+      createdAt: r.createdAt,
+      user: r.user,
+      likeCount: r.likes.length,
+      hasLiked: currentUser ? r.likes.some((l) => l.userId === currentUser.id) : false,
+    })),
+  }));
+
+  return NextResponse.json(formatted);
 }
 
 export async function POST(req: Request) {

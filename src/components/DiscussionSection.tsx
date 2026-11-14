@@ -1,16 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageSquare, Send, Reply } from "lucide-react";
+import { MessageSquare, Send, Reply, Heart } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
+
+interface DiscussionReply {
+  id: string;
+  content: string;
+  createdAt: string;
+  user: { fullName: string; avatarUrl: string | null };
+  likeCount?: number;
+  hasLiked?: boolean;
+}
 
 interface Discussion {
   id: string;
   content: string;
   createdAt: string;
   user: { fullName: string; avatarUrl: string | null };
-  replies?: Discussion[];
+  replies?: DiscussionReply[];
+  likeCount?: number;
+  hasLiked?: boolean;
 }
 
 export default function DiscussionSection({ lessonId }: { lessonId: string }) {
@@ -29,11 +40,63 @@ export default function DiscussionSection({ lessonId }: { lessonId: string }) {
     try {
       const res = await fetch(`/api/discussions?lessonId=${lessonId}`);
       const data = await res.json();
-      setDiscussions(data);
+      if (Array.isArray(data)) {
+        setDiscussions(data);
+      }
     } catch (error) {
       console.error("Failed to fetch discussions", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleLike = async (
+    discussionId: string,
+    isReply = false,
+    parentId?: string,
+  ) => {
+    // Optimistic update
+    setDiscussions((prev) =>
+      prev.map((d) => {
+        if (!isReply && d.id === discussionId) {
+          const nextLiked = !d.hasLiked;
+          const nextCount = (d.likeCount || 0) + (nextLiked ? 1 : -1);
+          return { ...d, hasLiked: nextLiked, likeCount: Math.max(0, nextCount) };
+        }
+        if (isReply && d.id === parentId && d.replies) {
+          return {
+            ...d,
+            replies: d.replies.map((r) => {
+              if (r.id === discussionId) {
+                const nextLiked = !r.hasLiked;
+                const nextCount = (r.likeCount || 0) + (nextLiked ? 1 : -1);
+                return {
+                  ...r,
+                  hasLiked: nextLiked,
+                  likeCount: Math.max(0, nextCount),
+                };
+              }
+              return r;
+            }),
+          };
+        }
+        return d;
+      }),
+    );
+
+    try {
+      const res = await fetch("/api/discussions/like", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ discussionId }),
+      });
+      if (res.status === 401) {
+        setAuthWarning("Silakan login untuk menyukai diskusi.");
+        fetchDiscussions(); // Rollback
+      }
+    } catch (err) {
+      console.error("Failed to toggle like", err);
+      fetchDiscussions(); // Rollback on error
     }
   };
 
@@ -63,7 +126,9 @@ export default function DiscussionSection({ lessonId }: { lessonId: string }) {
         setAuthWarning(null);
         fetchDiscussions();
       } else if (res.status === 401) {
-        setAuthWarning("Silakan masuk ke akun Anda terlebih dahulu untuk mengirim diskusi.");
+        setAuthWarning(
+          "Silakan masuk ke akun Anda terlebih dahulu untuk mengirim diskusi.",
+        );
       }
     } catch (error) {
       console.error("Failed to post discussion", error);
@@ -101,7 +166,7 @@ export default function DiscussionSection({ lessonId }: { lessonId: string }) {
         <div className="flex justify-end mt-2">
           <button
             type="submit"
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition"
+            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-sm"
           >
             <Send className="w-4 h-4" /> Kirim
           </button>
@@ -119,10 +184,10 @@ export default function DiscussionSection({ lessonId }: { lessonId: string }) {
           </div>
         ) : (
           discussions.map((discussion) => (
-            <div key={discussion.id}>
+            <div key={discussion.id} className="p-4 rounded-2xl bg-gray-50/60 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800/80">
               <div className="flex gap-3">
                 <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold shrink-0 text-sm">
-                  {discussion.user.fullName[0]}
+                  {discussion.user.fullName ? discussion.user.fullName[0] : "U"}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -136,24 +201,48 @@ export default function DiscussionSection({ lessonId }: { lessonId: string }) {
                       })}
                     </span>
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300 text-sm mb-2 leading-relaxed break-words">
+                  <p className="text-gray-700 dark:text-gray-300 text-sm mb-3 leading-relaxed break-words">
                     {discussion.content}
                   </p>
-                  <button
-                    onClick={() =>
-                      setReplyTo(
-                        replyTo === discussion.id ? null : discussion.id,
-                      )
-                    }
-                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                  >
-                    <Reply className="w-3 h-3" /> Balas
-                  </button>
+
+                  {/* Actions: Like & Reply */}
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => handleToggleLike(discussion.id)}
+                      className={`text-xs font-bold flex items-center gap-1.5 transition ${
+                        discussion.hasLiked
+                          ? "text-rose-600 dark:text-rose-400 font-black"
+                          : "text-gray-500 hover:text-rose-600 dark:text-gray-400"
+                      }`}
+                    >
+                      <Heart
+                        className={`w-3.5 h-3.5 ${
+                          discussion.hasLiked ? "fill-rose-500 text-rose-500" : ""
+                        }`}
+                      />
+                      <span>
+                        {(discussion.likeCount ?? 0) > 0
+                          ? discussion.likeCount
+                          : "Suka"}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        setReplyTo(
+                          replyTo === discussion.id ? null : discussion.id,
+                        )
+                      }
+                      className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                    >
+                      <Reply className="w-3.5 h-3.5" /> Balas
+                    </button>
+                  </div>
 
                   {replyTo === discussion.id && (
                     <form
                       onSubmit={(e) => handleSubmit(e, discussion.id)}
-                      className="mt-3 pl-3 border-l-2 border-gray-100 dark:border-gray-700"
+                      className="mt-3 pl-3 border-l-2 border-blue-500"
                     >
                       <input
                         name="replyContent"
@@ -173,11 +262,11 @@ export default function DiscussionSection({ lessonId }: { lessonId: string }) {
                   )}
 
                   {discussion.replies && discussion.replies.length > 0 && (
-                    <div className="mt-4 space-y-3 pl-3 border-l-2 border-gray-100 dark:border-gray-800">
+                    <div className="mt-4 space-y-3 pl-3 border-l-2 border-gray-200 dark:border-gray-700">
                       {discussion.replies.map((reply) => (
                         <div key={reply.id} className="flex gap-3">
                           <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 text-xs font-bold shrink-0">
-                            {reply.user.fullName[0]}
+                            {reply.user.fullName ? reply.user.fullName[0] : "U"}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
@@ -194,9 +283,30 @@ export default function DiscussionSection({ lessonId }: { lessonId: string }) {
                                 )}
                               </span>
                             </div>
-                            <p className="text-gray-700 dark:text-gray-300 text-xs break-words leading-relaxed">
+                            <p className="text-gray-700 dark:text-gray-300 text-xs break-words leading-relaxed mb-2">
                               {reply.content}
                             </p>
+                            <button
+                              onClick={() =>
+                                handleToggleLike(reply.id, true, discussion.id)
+                              }
+                              className={`text-[11px] font-bold flex items-center gap-1 transition ${
+                                reply.hasLiked
+                                  ? "text-rose-600 dark:text-rose-400 font-black"
+                                  : "text-gray-400 hover:text-rose-600 dark:text-gray-500"
+                              }`}
+                            >
+                              <Heart
+                                className={`w-3 h-3 ${
+                                  reply.hasLiked ? "fill-rose-500 text-rose-500" : ""
+                                }`}
+                              />
+                              <span>
+                                {(reply.likeCount ?? 0) > 0
+                                  ? reply.likeCount
+                                  : "Suka"}
+                              </span>
+                            </button>
                           </div>
                         </div>
                       ))}
