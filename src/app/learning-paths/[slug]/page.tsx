@@ -7,6 +7,7 @@ import {
   BookOpen,
   ArrowLeft,
   Sparkles,
+  Award,
 } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { requireValidUser } from "@/lib/auth";
@@ -78,10 +79,28 @@ export default async function LearningPathDetailPage({
     enrolledCourseIds = new Set(enrollments.map((e) => e.courseId));
   }
 
-  const completedCount = enrolledCourseIds.size;
+  // Hitung jumlah kursus yang 100% selesai dan kursus yang sudah diambil
   const totalCourses = path.courses.length;
-  const progressPct =
-    totalCourses > 0 ? Math.round((completedCount / totalCourses) * 100) : 0;
+  let fullyCompletedCoursesCount = 0;
+  let enrolledCoursesCount = 0;
+
+  path.courses.forEach((pc) => {
+    const isEnrolled = enrolledCourseIds.has(pc.courseId);
+    if (isEnrolled) enrolledCoursesCount++;
+
+    const lessons = pc.course.sections.flatMap((s) => s.lessons);
+    const completedLessons = lessons.filter((l) =>
+      l.progress?.some((p: any) => p.isCompleted),
+    ).length;
+    if (lessons.length > 0 && completedLessons === lessons.length) {
+      fullyCompletedCoursesCount++;
+    }
+  });
+
+  const pathProgressPct =
+    totalCourses > 0
+      ? Math.round((fullyCompletedCoursesCount / totalCourses) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 flex flex-col transition-colors duration-200">
@@ -116,18 +135,25 @@ export default async function LearningPathDetailPage({
             <div className="mt-8 bg-gray-50 dark:bg-gray-800/60 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-700/80 max-w-lg">
               <div className="flex justify-between items-center text-xs sm:text-sm font-bold mb-3">
                 <span className="text-gray-700 dark:text-gray-300">
-                  Progres Belajar Anda
+                  Progres Jalur Belajar
                 </span>
                 <span className="text-blue-600 dark:text-blue-400 font-black">
-                  {completedCount} dari {totalCourses} Kursus Dimulai
+                  {fullyCompletedCoursesCount} dari {totalCourses} Kursus Tuntas ({pathProgressPct}%)
                 </span>
               </div>
-              <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-2">
                 <div
-                  className="h-full bg-linear-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500"
-                  style={{ width: `${progressPct}%` }}
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    fullyCompletedCoursesCount === totalCourses
+                      ? "bg-emerald-500"
+                      : "bg-linear-to-r from-blue-500 to-indigo-600"
+                  }`}
+                  style={{ width: `${pathProgressPct}%` }}
                 />
               </div>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                {enrolledCoursesCount} kursus telah Anda daftarkan dalam kurikulum ini.
+              </p>
             </div>
           )}
         </div>
@@ -148,8 +174,20 @@ export default async function LearningPathDetailPage({
               enrolledCourseIds.has(path.courses[index - 1]?.courseId);
             const isLocked = !isFirst && !prevEnrolled && !isEnrolled;
 
-            // Target smart learn link
+            // Perhitungan progress per-kursus
             const lessons = pc.course.sections.flatMap((s) => s.lessons);
+            const totalLessons = lessons.length;
+            const completedLessons = lessons.filter((l) =>
+              l.progress?.some((p: any) => p.isCompleted),
+            ).length;
+            const coursePct =
+              totalLessons > 0
+                ? Math.round((completedLessons / totalLessons) * 100)
+                : 0;
+            const isCourseFinished =
+              totalLessons > 0 && completedLessons === totalLessons;
+
+            // Target smart learn link
             const nextUncompleted = lessons.find(
               (l) => !l.progress?.some((p: any) => p.isCompleted),
             );
@@ -163,24 +201,30 @@ export default async function LearningPathDetailPage({
               <div
                 key={pc.id}
                 className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 bg-white dark:bg-gray-900 rounded-3xl p-6 sm:p-7 border transition-all duration-200 ${
-                  isEnrolled
-                    ? "border-emerald-200 dark:border-emerald-800/80 shadow-md shadow-emerald-500/5"
-                    : "border-gray-100 dark:border-gray-800/80 hover:shadow-lg"
+                  isCourseFinished
+                    ? "border-emerald-300 dark:border-emerald-800 shadow-md shadow-emerald-500/10"
+                    : isEnrolled
+                      ? "border-blue-200 dark:border-blue-800/80 shadow-md shadow-blue-500/5"
+                      : "border-gray-100 dark:border-gray-800/80 hover:shadow-lg"
                 } ${isLocked ? "opacity-60" : ""}`}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-4 flex-1 min-w-0">
                   {/* Step Number / Status Icon */}
                   <div
                     className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-base shrink-0 ${
-                      isEnrolled
+                      isCourseFinished
                         ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
-                        : isLocked
-                          ? "bg-gray-100 dark:bg-gray-800 text-gray-400"
-                          : "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900"
+                        : isEnrolled
+                          ? "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                          : isLocked
+                            ? "bg-gray-100 dark:bg-gray-800 text-gray-400"
+                            : "bg-gray-50 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
                     }`}
                   >
-                    {isEnrolled ? (
-                      <CheckCircle className="w-6 h-6" />
+                    {isCourseFinished ? (
+                      <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    ) : isEnrolled ? (
+                      <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     ) : isLocked ? (
                       <Lock className="w-5 h-5" />
                     ) : (
@@ -189,19 +233,36 @@ export default async function LearningPathDetailPage({
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <span className="text-[11px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1 block">
-                      Langkah {index + 1}
-                    </span>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                        Langkah {index + 1}
+                      </span>
+                      {isCourseFinished ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Lulus 100%
+                        </span>
+                      ) : isEnrolled ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" /> Sedang Belajar ({coursePct}%)
+                        </span>
+                      ) : isLocked ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gray-100 dark:bg-gray-800 text-gray-400">
+                          Terkunci
+                        </span>
+                      ) : null}
+                    </div>
+
                     <h3 className="font-black text-gray-900 dark:text-white text-base sm:text-lg mb-1 leading-snug">
                       {pc.course.title}
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                       Dipandu oleh {pc.course.instructor.fullName || "Mentor Learnify"}
                     </p>
-                    <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500 font-medium">
+
+                    <div className="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500 font-medium flex-wrap">
                       <span className="flex items-center gap-1">
                         <BookOpen className="w-3.5 h-3.5" />
-                        {pc.course._count.sections} Modul
+                        {pc.course._count.sections} Modul ({totalLessons} Pelajaran)
                       </span>
                       <span>•</span>
                       <span className="capitalize">{pc.course.level}</span>
@@ -212,6 +273,34 @@ export default async function LearningPathDetailPage({
                           : `Rp ${pc.course.price.toLocaleString("id-ID")}`}
                       </span>
                     </div>
+
+                    {/* Mini Progress Bar Per-Course */}
+                    {isEnrolled && (
+                      <div className="mt-3 max-w-xs">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-1">
+                          <span>{completedLessons} dari {totalLessons} materi selesai</span>
+                          <span
+                            className={
+                              isCourseFinished
+                                ? "text-emerald-600 dark:text-emerald-400 font-black"
+                                : "text-blue-600 dark:text-blue-400 font-black"
+                            }
+                          >
+                            {coursePct}%
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              isCourseFinished
+                                ? "bg-emerald-500"
+                                : "bg-linear-to-r from-blue-500 to-indigo-600"
+                            }`}
+                            style={{ width: `${coursePct}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -220,12 +309,20 @@ export default async function LearningPathDetailPage({
                   <Link
                     href={targetUrl}
                     className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider shrink-0 transition-all ${
-                      isEnrolled
+                      isCourseFinished
                         ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20"
-                        : "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20"
+                        : isEnrolled
+                          ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20"
+                          : "bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 shadow-md"
                     }`}
                   >
-                    <span>{isEnrolled ? "Lanjutkan Belajar" : "Mulai Kursus"}</span>
+                    <span>
+                      {isCourseFinished
+                        ? "Tinjau Kursus"
+                        : isEnrolled
+                          ? "Lanjutkan Belajar"
+                          : "Mulai Kursus"}
+                    </span>
                     <ChevronRight className="w-4 h-4" />
                   </Link>
                 )}

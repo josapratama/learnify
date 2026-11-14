@@ -7,6 +7,8 @@ import {
   CheckCircle,
   Download,
   Clock,
+  Award,
+  Sparkles,
 } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
@@ -191,15 +193,17 @@ export default async function LearnPage({
   // Cek akses: preview bebas, sisanya butuh login + enrollment
   const isPreviewLesson = currentLesson.isPreview;
 
+  const enrollment = user
+    ? await prisma.enrollment.findUnique({
+        where: { userId_courseId: { userId: user.id, courseId: course.id } },
+      })
+    : null;
+
   if (!isPreviewLesson) {
     // Belum login → redirect ke login
     if (!user) redirect(`/login?from=/courses/${slug}/learn/${lessonSlug}`);
 
     // Sudah login, cek enrollment
-    const enrollment = await prisma.enrollment.findUnique({
-      where: { userId_courseId: { userId: user.id, courseId: course.id } },
-    });
-
     if (!enrollment) redirect(`/courses/${slug}`);
   }
 
@@ -213,6 +217,18 @@ export default async function LearnPage({
   const progressEntry = user ? (currentLesson.progress as any[])?.[0] : null;
   const isCompleted = progressEntry?.isCompleted ?? false;
   const initialPosition = progressEntry?.lastPosition ?? 0;
+
+  // Hitung progres kursus keseluruhan
+  const completedLessonsCount = allLessons.filter(
+    (l) => (l.progress as any[])?.some((p) => p.isCompleted),
+  ).length;
+  const totalLessonsCount = allLessons.length;
+  const progressPercentage =
+    totalLessonsCount > 0
+      ? Math.round((completedLessonsCount / totalLessonsCount) * 100)
+      : 0;
+  const isCourseFullyCompleted =
+    totalLessonsCount > 0 && completedLessonsCount === totalLessonsCount;
 
   // Serialize sections for client component
   const sidebarSections = course.sections.map((s) => ({
@@ -253,9 +269,41 @@ export default async function LearnPage({
             </span>
           </Link>
         </div>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 truncate max-w-[200px] md:max-w-xs hidden sm:block">
-          {course.title}
-        </h2>
+
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 truncate max-w-[180px] md:max-w-xs hidden sm:block">
+            {course.title}
+          </h2>
+
+          {/* Progress Indicator Header */}
+          {user && enrollment && (
+            <div className="hidden md:flex items-center gap-2.5 bg-gray-50 dark:bg-gray-800/80 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
+              <div className="w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    isCourseFullyCompleted
+                      ? "bg-emerald-500"
+                      : "bg-linear-to-r from-blue-600 to-indigo-600"
+                  }`}
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+              <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                {progressPercentage}%
+              </span>
+              {isCourseFullyCompleted && (
+                <Link
+                  href={`/certificate/${enrollment.id}`}
+                  className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 hover:underline"
+                >
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Sertifikat</span>
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+
         <ThemeToggle />
       </header>
 
@@ -270,6 +318,40 @@ export default async function LearnPage({
               <ChevronLeft className="w-4 h-4" /> Kembali ke Detail
             </Link>
           </div>
+
+          {/* Progress Card in Sidebar */}
+          {user && enrollment && (
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+              <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                <span className="text-gray-500 dark:text-gray-400">Progres Belajar</span>
+                <span className="text-blue-600 dark:text-blue-400 font-black">
+                  {progressPercentage}%
+                </span>
+              </div>
+              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-1.5">
+                <div
+                  className={`h-full transition-all duration-500 ${
+                    isCourseFullyCompleted
+                      ? "bg-emerald-500"
+                      : "bg-linear-to-r from-blue-600 to-indigo-600"
+                  }`}
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                {completedLessonsCount} dari {totalLessonsCount} Pelajaran Selesai
+              </p>
+              {isCourseFullyCompleted && (
+                <Link
+                  href={`/certificate/${enrollment.id}`}
+                  className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-linear-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-black text-xs uppercase tracking-wider shadow-sm transition"
+                >
+                  <Award className="w-4 h-4" />
+                  <span>Klaim Sertifikat Resmi</span>
+                </Link>
+              )}
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto">
             {course.sections.map((section) => (
               <div key={section.id}>
@@ -330,6 +412,31 @@ export default async function LearnPage({
             >
               <ChevronLeft className="w-4 h-4" /> Detail Kursus
             </Link>
+
+            {/* Completion Banner */}
+            {isCourseFullyCompleted && enrollment && (
+              <div className="mb-6 p-4 rounded-2xl bg-linear-to-r from-amber-500/10 via-yellow-500/10 to-amber-500/10 border border-amber-300 dark:border-amber-700/60 flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-black text-amber-900 dark:text-amber-200">
+                      Selamat! Anda Telah Menyelesaikan Kursus Ini 🎓
+                    </h4>
+                    <p className="text-[11px] sm:text-xs text-amber-700 dark:text-amber-300/80">
+                      Sertifikat resmi kelulusan telah diterbitkan dan siap diunduh atau dibagikan ke LinkedIn.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href={`/certificate/${enrollment.id}`}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black uppercase tracking-wider rounded-xl transition shadow-xs shrink-0"
+                >
+                  Lihat Sertifikat
+                </Link>
+              </div>
+            )}
 
             <h1 className="text-xl md:text-2xl lg:text-3xl font-bold mb-6 text-gray-900 dark:text-white leading-snug">
               {currentLesson.title}
@@ -434,6 +541,8 @@ export default async function LearnPage({
                   courseSlug={slug}
                   nextLessonSlug={nextLesson?.slug}
                   initialCompleted={isCompleted}
+                  enrollmentId={enrollment?.id}
+                  courseTitle={course.title}
                 />
               ) : (
                 <Link

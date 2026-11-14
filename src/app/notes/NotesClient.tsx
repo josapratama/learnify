@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -10,6 +10,9 @@ import {
   ArrowRight,
   Filter,
   X,
+  Download,
+  ChevronDown,
+  FileCode,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
@@ -37,6 +40,19 @@ interface NotesClientProps {
 export default function NotesClient({ initialNotes }: NotesClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourseSlug, setSelectedCourseSlug] = useState<string>("all");
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  // Close export dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setIsExportOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Distinct courses
   const coursesList = useMemo(() => {
@@ -89,6 +105,75 @@ export default function NotesClient({ initialNotes }: NotesClientProps) {
       >,
     );
   }, [filteredNotes]);
+
+  const exportNotes = (format: "md" | "txt") => {
+    if (filteredNotes.length === 0) return;
+    setIsExportOpen(false);
+
+    const nowStr = new Date().toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    let content = "";
+
+    if (format === "md") {
+      content += `# Catatan Belajar — Learnify LMS\n`;
+      content += `*Tanggal Ekspor: ${nowStr}*\n`;
+      content += `*Total Catatan: ${filteredNotes.length}*\n\n`;
+      content += `---\n\n`;
+
+      Object.values(groupedByCourse).forEach(({ courseTitle, notes }) => {
+        content += `## 📚 Kursus: ${courseTitle}\n\n`;
+        notes.forEach((note, idx) => {
+          const dateStr = new Date(note.updatedAt).toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          });
+          content += `### ${idx + 1}. Materi: ${note.lesson.title}\n`;
+          content += `*Pembaruan: ${dateStr}*\n\n`;
+          content += `${note.content}\n\n`;
+          content += `---\n\n`;
+        });
+      });
+    } else {
+      content += `CATATAN BELAJAR — LEARNIFY LMS\n`;
+      content += `Tanggal Ekspor: ${nowStr}\n`;
+      content += `Total Catatan: ${filteredNotes.length}\n`;
+      content += `========================================================\n\n`;
+
+      Object.values(groupedByCourse).forEach(({ courseTitle, notes }) => {
+        content += `[KURSUS] ${courseTitle}\n`;
+        content += `--------------------------------------------------------\n\n`;
+        notes.forEach((note, idx) => {
+          const dateStr = new Date(note.updatedAt).toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          });
+          content += `(${idx + 1}) MATERI: ${note.lesson.title} [${dateStr}]\n`;
+          content += `${note.content}\n\n`;
+        });
+        content += `\n`;
+      });
+    }
+
+    const mime =
+      format === "md"
+        ? "text/markdown;charset=utf-8"
+        : "text/plain;charset=utf-8";
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `catatan-belajar-learnify-${new Date().toISOString().slice(0, 10)}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   if (initialNotes.length === 0) {
     return (
@@ -150,7 +235,7 @@ export default function NotesClient({ initialNotes }: NotesClientProps) {
                 setSearchQuery("");
                 setSelectedCourseSlug("all");
               }}
-              className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-red-500 transition"
+              className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-red-500 transition cursor-pointer"
               title="Reset Filter"
             >
               <X className="w-4 h-4" />
@@ -159,11 +244,47 @@ export default function NotesClient({ initialNotes }: NotesClientProps) {
         </div>
       </div>
 
-      {/* Results Header */}
-      <div className="flex items-center justify-between px-1">
+      {/* Results Header with Export Button */}
+      <div className="flex items-center justify-between px-1 flex-wrap gap-2">
         <p className="text-xs font-bold text-gray-500 dark:text-gray-400">
-          Ditemukan <span className="text-gray-900 dark:text-white font-black">{filteredNotes.length}</span> catatan
+          Ditemukan{" "}
+          <span className="text-gray-900 dark:text-white font-black">
+            {filteredNotes.length}
+          </span>{" "}
+          catatan
         </p>
+
+        {filteredNotes.length > 0 && (
+          <div className="relative" ref={exportRef}>
+            <button
+              onClick={() => setIsExportOpen(!isExportOpen)}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold transition shadow-xs cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>Ekspor Catatan</span>
+              <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+            </button>
+
+            {isExportOpen && (
+              <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl p-1.5 z-30 animate-in fade-in zoom-in-95 duration-150">
+                <button
+                  onClick={() => exportNotes("md")}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition cursor-pointer text-left"
+                >
+                  <FileCode className="w-4 h-4 text-blue-500" />
+                  <span>Markdown (.md)</span>
+                </button>
+                <button
+                  onClick={() => exportNotes("txt")}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition cursor-pointer text-left"
+                >
+                  <FileText className="w-4 h-4 text-emerald-500" />
+                  <span>Plain Text (.txt)</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Notes Display */}
@@ -233,7 +354,7 @@ export default function NotesClient({ initialNotes }: NotesClientProps) {
               setSearchQuery("");
               setSelectedCourseSlug("all");
             }}
-            className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+            className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
           >
             Hapus Filter Pencarian
           </button>

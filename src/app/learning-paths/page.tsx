@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Star, Compass } from "lucide-react";
+import { ArrowRight, BookOpen, Star, Compass, Sparkles } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { requireValidUser } from "@/lib/auth";
 import Navbar from "@/components/Navbar";
@@ -27,6 +27,15 @@ export default async function LearningPathsPage() {
         },
       })
     : null;
+
+  let userEnrolledCourseIds = new Set<string>();
+  if (user) {
+    const enrollments = await prisma.enrollment.findMany({
+      where: { userId: user.id },
+      select: { courseId: true },
+    });
+    userEnrolledCourseIds = new Set(enrollments.map((e) => e.courseId));
+  }
 
   const paths = await prisma.learningPath.findMany({
     where: { isPublished: true },
@@ -78,32 +87,44 @@ export default async function LearningPathsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-            {paths.map((path) => (
-              <Link
-                key={path.id}
-                href={`/learning-paths/${path.slug}`}
-                className="group bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800/80 overflow-hidden hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="h-3.5" style={{ backgroundColor: path.color || "#3b82f6" }} />
-                  <div className="p-7 sm:p-9">
-                    <div className="flex items-start justify-between gap-4 mb-3">
-                      <div>
-                        <span className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-1.5 block">
-                          {path.level}
-                        </span>
-                        <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition leading-snug">
-                          {path.title}
-                        </h2>
-                      </div>
-                      <div className="w-10 h-10 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                        <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-white transition-transform group-hover:translate-x-0.5" />
-                      </div>
-                    </div>
+            {paths.map((path) => {
+              const enrolledInPathCount = path.courses.filter((pc) =>
+                userEnrolledCourseIds.has(pc.course.id),
+              ).length;
 
-                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed">
-                      {path.description}
-                    </p>
+              return (
+                <Link
+                  key={path.id}
+                  href={`/learning-paths/${path.slug}`}
+                  className="group bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800/80 overflow-hidden hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="h-3.5" style={{ backgroundColor: path.color || "#3b82f6" }} />
+                    <div className="p-7 sm:p-9">
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            <span className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
+                              {path.level}
+                            </span>
+                            {enrolledInPathCount > 0 && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" /> {enrolledInPathCount}/{path.courses.length} Diikuti
+                              </span>
+                            )}
+                          </div>
+                          <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition leading-snug">
+                            {path.title}
+                          </h2>
+                        </div>
+                        <div className="w-10 h-10 rounded-2xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                          <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-white transition-transform group-hover:translate-x-0.5" />
+                        </div>
+                      </div>
+
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed">
+                        {path.description}
+                      </p>
 
                     <div className="flex items-center gap-5 text-xs font-bold text-gray-500 dark:text-gray-400">
                       <span className="flex items-center gap-1.5">
@@ -135,7 +156,8 @@ export default async function LearningPathsPage() {
                   </div>
                 </div>
               </Link>
-            ))}
+            );
+          })}
           </div>
         )}
       </main>

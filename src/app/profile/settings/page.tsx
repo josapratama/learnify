@@ -2,13 +2,14 @@ import { requireValidUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import ProfileSettingsForm from "@/components/ProfileSettingsForm";
+import PasswordChangeForm from "@/components/PasswordChangeForm";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Settings } from "lucide-react";
+import { Settings, Lock } from "lucide-react";
 
 export const metadata = {
   title: "Pengaturan Akun | Learnify",
-  description: "Perbarui profil, informasi publik, bio dan avatar siswa Learnify.",
+  description: "Perbarui profil, informasi publik, bio, avatar, dan kata sandi siswa Learnify.",
 };
 
 export default async function SettingsPage() {
@@ -36,8 +37,8 @@ export default async function SettingsPage() {
     <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 flex flex-col transition-colors duration-200">
       <Navbar user={dbUser} />
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-        <div className="mb-8 sm:mb-10">
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-8 sm:space-y-10">
+        <div>
           <div className="flex items-center gap-3.5 mb-2">
             <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-200 dark:border-blue-800">
               <Settings className="w-6 h-6" />
@@ -47,14 +48,33 @@ export default async function SettingsPage() {
                 Pengaturan Akun & Profil
               </h1>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                Perbarui biodata publik, tautan portofolio, dan foto avatar profil Anda.
+                Perbarui biodata publik, tautan portofolio, foto avatar, dan keamanan kata sandi Anda.
               </p>
             </div>
           </div>
         </div>
 
+        {/* Form Biodata & Profil */}
         <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800/80 p-6 sm:p-8 shadow-xs">
           <ProfileSettingsForm user={dbUser} />
+        </div>
+
+        {/* Form Ganti Kata Sandi */}
+        <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800/80 p-6 sm:p-8 shadow-xs">
+          <div className="mb-6 flex items-center gap-2.5 pb-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <Lock className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-gray-900 dark:text-white">
+                Keamanan &amp; Kata Sandi
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Ubah kata sandi akun untuk menjaga keamanan akses pembelajaran Anda.
+              </p>
+            </div>
+          </div>
+          <PasswordChangeForm />
         </div>
       </main>
 
