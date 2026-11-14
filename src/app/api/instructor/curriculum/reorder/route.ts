@@ -11,9 +11,12 @@ export async function POST(req: Request) {
   const { courseId, sections, isPublished } = await req.json();
 
   try {
-    // Verify course ownership
+    // Verify course ownership (admins can edit any course)
     const course = await prisma.course.findUnique({
-      where: { id: courseId, instructorId: user.id },
+      where:
+        user.role === "admin"
+          ? { id: courseId }
+          : { id: courseId, instructorId: user.id },
     });
 
     if (!course) {

@@ -33,7 +33,7 @@ export default async function InstructorProfilePage({
     },
   });
 
-  if (!instructor || instructor.role !== "instructor") {
+  if (!instructor || (instructor.role !== "instructor" && instructor.role !== "admin")) {
     notFound();
   }
 

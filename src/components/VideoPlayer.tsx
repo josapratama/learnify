@@ -98,46 +98,70 @@ export default function VideoPlayer({
     return <div className="aspect-video bg-black rounded-xl animate-pulse" />;
 
   return (
-    <div className="aspect-video bg-black rounded-xl mb-8 overflow-hidden shadow-2xl relative group">
-      {/* Resume notification pill */}
-      {showResumeNotice && initialPosition > 10 && (
-        <div className="absolute top-4 left-4 z-20 bg-gray-900/90 backdrop-blur-md text-white text-xs px-3.5 py-2 rounded-xl flex items-center gap-2 border border-white/20 shadow-xl transition animate-in fade-in slide-in-from-top-2">
-          <PlayCircle className="w-4 h-4 text-blue-400 shrink-0" />
-          <span>
-            Melanjutkan dari <strong className="text-blue-300">{formatTime(initialPosition)}</strong>
-          </span>
-          <button
-            onClick={handleRestartFromBeginning}
-            className="ml-2 px-2 py-0.5 bg-white/20 hover:bg-white/30 rounded-md text-[11px] font-bold flex items-center gap-1 transition"
-          >
-            <RotateCcw className="w-3 h-3" /> Ulangi
-          </button>
-        </div>
-      )}
+    <div className="mb-8 space-y-2">
+      <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl relative group">
+        {/* Resume notification pill */}
+        {showResumeNotice && initialPosition > 10 && (
+          <div className="absolute top-4 left-4 z-20 bg-gray-900/90 backdrop-blur-md text-white text-xs px-3.5 py-2 rounded-xl flex items-center gap-2 border border-white/20 shadow-xl transition animate-in fade-in slide-in-from-top-2">
+            <PlayCircle className="w-4 h-4 text-blue-400 shrink-0" />
+            <span>
+              Melanjutkan dari <strong className="text-blue-300">{formatTime(initialPosition)}</strong>
+            </span>
+            <button
+              onClick={handleRestartFromBeginning}
+              className="ml-2 px-2 py-0.5 bg-white/20 hover:bg-white/30 rounded-md text-[11px] font-bold flex items-center gap-1 transition"
+            >
+              <RotateCcw className="w-3 h-3" /> Ulangi
+            </button>
+          </div>
+        )}
 
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      {(() => {
-        const RP = ReactPlayer as any;
-        return (
-          <RP
-            ref={playerRef}
-            url={url}
-            width="100%"
-            height="100%"
-            controls
-            onProgress={handleProgress}
-            onReady={handleOnReady}
-            onStart={handleOnStart}
-            config={{
-              file: {
-                attributes: {
-                  controlsList: "nodownload",
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {(() => {
+          const RP = ReactPlayer as any;
+          return (
+            <RP
+              ref={playerRef}
+              url={url}
+              width="100%"
+              height="100%"
+              controls
+              onProgress={handleProgress}
+              onReady={handleOnReady}
+              onStart={handleOnStart}
+              config={{
+                file: {
+                  attributes: {
+                    controlsList: "nodownload",
+                  },
                 },
-              },
-            }}
-          />
-        );
-      })()}
+              }}
+            />
+          );
+        })()}
+      </div>
+
+      {/* Quick video playback hints & actions */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 font-medium">
+            <kbd className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-[10px] font-mono border border-gray-300 dark:border-gray-700">Space</kbd> Putar/Jeda
+          </span>
+          <span>•</span>
+          <span className="inline-flex items-center gap-1 font-medium">
+            <kbd className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-[10px] font-mono border border-gray-300 dark:border-gray-700">←</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-[10px] font-mono border border-gray-300 dark:border-gray-700">→</kbd> Mundur/Maju 5s
+          </span>
+        </div>
+        <button
+          onClick={handleRestartFromBeginning}
+          className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1 transition cursor-pointer font-medium"
+          title="Tonton ulang dari menit 0:00"
+        >
+          <RotateCcw className="w-3 h-3" />
+          <span>Putar dari awal</span>
+        </button>
+      </div>
     </div>
   );
 }

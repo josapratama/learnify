@@ -109,6 +109,17 @@ export default async function CoursesCatalogPage({
 
   const hasActiveFilters = Boolean(q || category || level || price || sort);
 
+  const createFilterUrl = (paramToRemove: string) => {
+    const params = new URLSearchParams();
+    if (q && paramToRemove !== "q") params.set("q", q);
+    if (category && paramToRemove !== "category") params.set("category", category);
+    if (level && paramToRemove !== "level") params.set("level", level);
+    if (price && paramToRemove !== "price") params.set("price", price);
+    if (sort && paramToRemove !== "sort") params.set("sort", sort);
+    const qs = params.toString();
+    return qs ? `/courses?${qs}` : "/courses";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col transition-colors duration-200">
       <Navbar user={dbUser} />
@@ -190,6 +201,47 @@ export default async function CoursesCatalogPage({
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Menampilkan hasil untuk kata kunci: <strong className="text-gray-900 dark:text-white">&quot;{q}&quot;</strong>
               </p>
+            )}
+            {hasActiveFilters && (
+              <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                <span className="text-xs text-gray-400 font-medium">Filter aktif:</span>
+                {category && (
+                  <Link
+                    href={createFilterUrl("category")}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition border border-blue-200 dark:border-blue-800"
+                  >
+                    <span>Kategori: {category}</span>
+                    <X className="w-3 h-3" />
+                  </Link>
+                )}
+                {level && (
+                  <Link
+                    href={createFilterUrl("level")}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition border border-blue-200 dark:border-blue-800"
+                  >
+                    <span>Level: {level}</span>
+                    <X className="w-3 h-3" />
+                  </Link>
+                )}
+                {price && (
+                  <Link
+                    href={createFilterUrl("price")}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition border border-blue-200 dark:border-blue-800"
+                  >
+                    <span>Harga: {price === "free" ? "Gratis" : "Berbayar"}</span>
+                    <X className="w-3 h-3" />
+                  </Link>
+                )}
+                {q && (
+                  <Link
+                    href={createFilterUrl("q")}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition border border-blue-200 dark:border-blue-800"
+                  >
+                    <span>Cari: &ldquo;{q}&rdquo;</span>
+                    <X className="w-3 h-3" />
+                  </Link>
+                )}
+              </div>
             )}
           </div>
 

@@ -24,7 +24,7 @@ export default async function EditCoursePage({
   }
 
   const course = await prisma.course.findUnique({
-    where: { id, instructorId: user.id },
+    where: user.role === "admin" ? { id } : { id, instructorId: user.id },
     include: {
       sections: {
         orderBy: { orderIndex: "asc" },
