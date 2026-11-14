@@ -7,6 +7,11 @@ import {
   Clock,
   BarChart,
   Star,
+  Sparkles,
+  Award,
+  CheckCircle2,
+  ShieldCheck,
+  Zap,
 } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { requireValidUser } from "@/lib/auth";
@@ -16,6 +21,7 @@ import WishlistButton from "@/components/WishlistButton";
 import ShareButton from "@/components/ShareButton";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import CourseCurriculumAccordion from "./CourseCurriculumAccordion";
 
 export const dynamic = "force-dynamic";
 
@@ -211,51 +217,61 @@ export default async function CourseDetailPage({
         </div>
       </div>
 
-      {/* Curriculum */}
-      <div className="max-w-5xl mx-auto py-12 md:py-16 px-4 md:px-6">
-        <h2 className="text-xl md:text-2xl font-bold mb-6 md:mb-8 text-gray-900 dark:text-white">
+      {/* Course Highlights & Features */}
+      <div className="max-w-5xl mx-auto pt-10 px-4 md:px-6 w-full">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 sm:p-6 bg-gray-50/80 dark:bg-gray-900/60 rounded-3xl border border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <Award className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-gray-900 dark:text-white">Sertifikat Resmi</p>
+              <p className="text-[11px] text-gray-400">Terverifikasi Digital</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-gray-900 dark:text-white">Akses Selamanya</p>
+              <p className="text-[11px] text-gray-400">Materi Terupdate</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <Zap className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-gray-900 dark:text-white">Code Playground</p>
+              <p className="text-[11px] text-gray-400">Praktik di Browser</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-gray-900 dark:text-white">AI Tutor 24/7</p>
+              <p className="text-[11px] text-gray-400">Bantuan Belajar</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Curriculum Accordion */}
+      <div className="max-w-5xl mx-auto py-10 md:py-14 px-4 md:px-6 w-full">
+        <h2 className="text-xl md:text-2xl font-bold mb-6 text-gray-900 dark:text-white">
           Kurikulum Kursus
         </h2>
-        <div className="space-y-3 md:space-y-4">
-          {course.sections.map((section) => (
-            <div
-              key={section.id}
-              className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden"
-            >
-              <div className="bg-gray-50 dark:bg-gray-900 px-4 md:px-6 py-4 font-bold text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-800 text-sm md:text-base">
-                {section.title}
-              </div>
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {section.lessons.map((lesson) => (
-                  <div
-                    key={lesson.id}
-                    className="px-4 md:px-6 py-3.5 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-900/50 transition bg-white dark:bg-gray-950 gap-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {lesson.contentType === "video" ? (
-                        <PlayCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
-                      ) : (
-                        <FileText className="w-5 h-5 text-gray-400 dark:text-gray-500 shrink-0" />
-                      )}
-                      <span className="text-gray-700 dark:text-gray-300 text-sm truncate">
-                        {lesson.title}
-                      </span>
-                    </div>
-                    {lesson.isPreview && (
-                      <Link
-                        href={`/courses/${course.slug}/learn/${lesson.slug}`}
-                        className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap shrink-0 flex items-center gap-1"
-                      >
-                        <PlayCircle className="w-3.5 h-3.5" />
-                        Preview
-                      </Link>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+
+        <CourseCurriculumAccordion
+          sections={course.sections as any}
+          courseSlug={course.slug}
+        />
       </div>
 
       {/* Reviews */}

@@ -45,6 +45,17 @@ export default async function LearningPathDetailPage({
             include: {
               instructor: { select: { fullName: true } },
               _count: { select: { enrollments: true, sections: true } },
+              sections: {
+                orderBy: { orderIndex: "asc" },
+                include: {
+                  lessons: {
+                    orderBy: { orderIndex: "asc" },
+                    include: {
+                      progress: user ? { where: { userId: user.id } } : false,
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -137,6 +148,17 @@ export default async function LearningPathDetailPage({
               enrolledCourseIds.has(path.courses[index - 1]?.courseId);
             const isLocked = !isFirst && !prevEnrolled && !isEnrolled;
 
+            // Target smart learn link
+            const lessons = pc.course.sections.flatMap((s) => s.lessons);
+            const nextUncompleted = lessons.find(
+              (l) => !l.progress?.some((p: any) => p.isCompleted),
+            );
+            const resumeSlug = (nextUncompleted || lessons[0])?.slug || "";
+            const targetUrl =
+              isEnrolled && resumeSlug
+                ? `/courses/${pc.course.slug}/learn/${resumeSlug}`
+                : `/courses/${pc.course.slug}`;
+
             return (
               <div
                 key={pc.id}
@@ -196,7 +218,7 @@ export default async function LearningPathDetailPage({
                 {/* Action Button */}
                 {!isLocked && (
                   <Link
-                    href={`/courses/${pc.course.slug}`}
+                    href={targetUrl}
                     className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider shrink-0 transition-all ${
                       isEnrolled
                         ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20"

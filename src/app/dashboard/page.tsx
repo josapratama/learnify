@@ -107,6 +107,38 @@ export default async function DashboardPage() {
   });
   const myXp = myCompletedLessons * 50 + (dbUser?.streak || 0) * 25;
 
+  // Level Progression Calculation
+  let levelTitle = "Novice (Pemula)";
+  let levelNumber = 1;
+  let levelIcon = "🥉";
+  let nextLevelXp = 250;
+  let prevLevelXp = 0;
+
+  if (myXp >= 1500) {
+    levelTitle = "Master (Tech Maestro)";
+    levelNumber = 4;
+    levelIcon = "👑";
+    nextLevelXp = 3000;
+    prevLevelXp = 1500;
+  } else if (myXp >= 750) {
+    levelTitle = "Pro (Pengembang Handal)";
+    levelNumber = 3;
+    levelIcon = "🥇";
+    nextLevelXp = 1500;
+    prevLevelXp = 750;
+  } else if (myXp >= 250) {
+    levelTitle = "Explorer (Penjelajah)";
+    levelNumber = 2;
+    levelIcon = "🥈";
+    nextLevelXp = 750;
+    prevLevelXp = 250;
+  }
+
+  const levelProgressPct = Math.min(
+    100,
+    Math.max(5, Math.round(((myXp - prevLevelXp) / (nextLevelXp - prevLevelXp)) * 100)),
+  );
+
   const totalEnrolled = enrollments.length;
   const completedCount = enrollments.filter((en) => {
     const lessons = en.course.sections.flatMap((s) => s.lessons);
@@ -173,6 +205,40 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Level Rank & XP Tier Progression Bar */}
+          <div className="relative z-10 mt-8 pt-6 border-t border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl sm:text-3xl p-2 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20">
+                {levelIcon}
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-amber-300">
+                    Level {levelNumber} Tier
+                  </span>
+                  <span className="text-white/60 text-xs">•</span>
+                  <span className="text-sm font-black text-white">{levelTitle}</span>
+                </div>
+                <p className="text-xs text-blue-100 mt-0.5">
+                  {myXp} XP terkumpul ({nextLevelXp - myXp} XP lagi menuju Level {levelNumber + 1})
+                </p>
+              </div>
+            </div>
+
+            <div className="w-full sm:w-64">
+              <div className="flex justify-between items-center text-[10px] font-bold text-blue-200 mb-1.5">
+                <span>Progress Level {levelNumber}</span>
+                <span>{levelProgressPct}%</span>
+              </div>
+              <div className="w-full bg-black/25 backdrop-blur-md h-2.5 rounded-full overflow-hidden border border-white/15">
+                <div
+                  className="bg-linear-to-r from-amber-400 to-yellow-300 h-full rounded-full transition-all duration-700 shadow-sm"
+                  style={{ width: `${levelProgressPct}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>

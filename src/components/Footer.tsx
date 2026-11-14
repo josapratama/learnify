@@ -265,9 +265,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <span className="text-gray-400 dark:text-gray-500 cursor-default">
-                  Bantuan 24/7 (AI Tutor)
-                </span>
+                <Link
+                  href="/faq"
+                  className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                >
+                  ❓ Pusat Bantuan (FAQ)
+                </Link>
               </li>
             </ul>
           </div>
