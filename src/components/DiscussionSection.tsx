@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { MessageSquare, Send, Reply, Heart } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { MessageSquare, Send, Reply, Heart, Search, X, Filter } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -30,10 +30,43 @@ export default function DiscussionSection({ lessonId }: { lessonId: string }) {
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [authWarning, setAuthWarning] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterTab, setFilterTab] = useState<"all" | "replied" | "popular">("all");
 
   useEffect(() => {
     fetchDiscussions();
   }, [lessonId]);
+
+  const filteredDiscussions = useMemo(() => {
+    return discussions
+      .filter((d) => {
+        if (filterTab === "replied" && (!d.replies || d.replies.length === 0)) {
+          return false;
+        }
+        if (filterTab === "popular" && (d.likeCount ?? 0) <= 0) {
+          return false;
+        }
+
+        const q = searchQuery.toLowerCase().trim();
+        if (!q) return true;
+
+        const questionMatch = d.content.toLowerCase().includes(q);
+        const authorMatch = (d.user.fullName || "").toLowerCase().includes(q);
+        const replyMatch = d.replies?.some(
+          (r) =>
+            r.content.toLowerCase().includes(q) ||
+            (r.user.fullName || "").toLowerCase().includes(q),
+        );
+
+        return questionMatch || authorMatch || replyMatch;
+      })
+      .sort((a, b) => {
+        if (filterTab === "popular") {
+          return (b.likeCount ?? 0) - (a.likeCount ?? 0);
+        }
+        return 0;
+      });
+  }, [discussions, filterTab, searchQuery]);
 
   const fetchDiscussions = async () => {
     setLoading(true);
@@ -166,24 +199,96 @@ export default function DiscussionSection({ lessonId }: { lessonId: string }) {
         <div className="flex justify-end mt-2">
           <button
             type="submit"
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-sm"
+            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-sm cursor-pointer"
           >
             <Send className="w-4 h-4" /> Kirim
           </button>
         </div>
       </form>
 
+      {/* Discussion Search & Filter Controls */}
+      {discussions.length > 0 && (
+        <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* Filter Tabs */}
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl shrink-0 overflow-x-auto no-scrollbar">
+            {(
+              [
+                { id: "all", label: `Semua (${discussions.length})` },
+                {
+                  id: "replied",
+                  label: "Ada Balasan",
+                },
+                {
+                  id: "popular",
+                  label: "Paling Disukai",
+                },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setFilterTab(tab.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                  filterTab === tab.id
+                    ? "bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-xs"
+                    : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Box */}
+          <div className="relative flex-1 sm:max-w-xs">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari pertanyaan / jawaban..."
+              className="w-full pl-8 pr-7 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-6">
         {loading ? (
-          <div className="text-center py-8 text-gray-400 dark:text-gray-500">
+          <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-xs">
             Memuat diskusi...
           </div>
         ) : discussions.length === 0 ? (
-          <div className="text-center py-8 text-gray-400 dark:text-gray-500">
+          <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-xs">
             Belum ada diskusi. Jadilah yang pertama bertanya!
           </div>
+        ) : filteredDiscussions.length === 0 ? (
+          <div className="text-center py-8 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 p-6">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              Tidak ada diskusi yang cocok dengan filter atau kata kunci &quot;{searchQuery}&quot;.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setFilterTab("all");
+              }}
+              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+            >
+              Reset Filter Diskusi
+            </button>
+          </div>
         ) : (
-          discussions.map((discussion) => (
+          filteredDiscussions.map((discussion) => (
             <div key={discussion.id} className="p-4 rounded-2xl bg-gray-50/60 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800/80">
               <div className="flex gap-3">
                 <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold shrink-0 text-sm">

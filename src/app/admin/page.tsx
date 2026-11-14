@@ -9,6 +9,11 @@ import {
   TrendingUp,
   DollarSign,
   AlertCircle,
+  MessageSquare,
+  Star,
+  ArrowRight,
+  ExternalLink,
+  CheckCircle,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import AdminUserTable from "@/components/AdminUserTable";
@@ -26,7 +31,9 @@ export default async function AdminPage() {
     totalEnrollments,
     revenueData,
     recentUsers,
-    discussions,
+    discussionsCount,
+    reviewStats,
+    recentEnrollments,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.course.count(),
@@ -47,40 +54,75 @@ export default async function AdminPage() {
       },
     }),
     prisma.discussion.count(),
+    prisma.review.aggregate({
+      _count: { id: true },
+      _avg: { rating: true },
+    }),
+    prisma.enrollment.findMany({
+      where: { status: "paid" },
+      orderBy: { enrolledAt: "desc" },
+      take: 5,
+      include: {
+        user: { select: { fullName: true, email: true } },
+        course: { select: { title: true, slug: true, price: true } },
+      },
+    }),
   ]);
 
   const totalRevenue = revenueData._sum.amount || 0;
+  const avgRating = reviewStats._avg.rating
+    ? reviewStats._avg.rating.toFixed(1)
+    : "5.0";
+  const totalReviews = reviewStats._count.id;
 
   const stats = [
     {
       label: "Total Pengguna",
-      value: totalUsers.toLocaleString(),
+      value: totalUsers.toLocaleString("id-ID"),
       icon: Users,
-      color: "blue",
+      bg: "bg-blue-50 dark:bg-blue-950/50",
+      textColor: "text-blue-600 dark:text-blue-400",
     },
     {
       label: "Total Kursus",
-      value: totalCourses.toLocaleString(),
+      value: totalCourses.toLocaleString("id-ID"),
       icon: BookOpen,
-      color: "green",
+      bg: "bg-emerald-50 dark:bg-emerald-950/50",
+      textColor: "text-emerald-600 dark:text-emerald-400",
     },
     {
       label: "Enrollment Aktif",
-      value: totalEnrollments.toLocaleString(),
+      value: totalEnrollments.toLocaleString("id-ID"),
       icon: TrendingUp,
-      color: "purple",
+      bg: "bg-indigo-50 dark:bg-indigo-950/50",
+      textColor: "text-indigo-600 dark:text-indigo-400",
     },
     {
       label: "Total Revenue",
-      value: `Rp${totalRevenue.toLocaleString("id-ID")}`,
+      value: `Rp ${totalRevenue.toLocaleString("id-ID")}`,
       icon: DollarSign,
-      color: "yellow",
+      bg: "bg-amber-50 dark:bg-amber-950/50",
+      textColor: "text-amber-600 dark:text-amber-400",
+    },
+    {
+      label: "Diskusi Aktif",
+      value: discussionsCount.toLocaleString("id-ID"),
+      icon: MessageSquare,
+      bg: "bg-purple-50 dark:bg-purple-950/50",
+      textColor: "text-purple-600 dark:text-purple-400",
+    },
+    {
+      label: "Rating Platform",
+      value: `${avgRating} ★ (${totalReviews} ulasan)`,
+      icon: Star,
+      bg: "bg-yellow-50 dark:bg-yellow-950/50",
+      textColor: "text-yellow-500",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <nav className="bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-4 px-6 sticky top-0 z-50">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 flex flex-col transition-colors duration-200">
+      <nav className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 py-4 px-6 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link
             href="/"
@@ -104,50 +146,61 @@ export default async function AdminPage() {
               href="/dashboard"
               className="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1.5 transition bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-xl"
             >
-              ← Dashboard
+              ← Dashboard Siswa
             </Link>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 py-10">
-        <div className="flex items-center gap-3 mb-10">
-          <AlertCircle className="w-7 h-7 text-red-500" />
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white">
-            Admin Panel
-          </h1>
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-2xl bg-red-50 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center border border-red-200 dark:border-red-800">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+              Admin Platform Overview
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+              Pantau seluruh aktivitas operasional, pertumbuhan pengguna, kursus, dan analitik pendapatan platform.
+            </p>
+          </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          {stats.map(({ label, value, icon: Icon, color }) => (
+        {/* Stats Grid — 6 Metrics */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4 mb-8">
+          {stats.map(({ label, value, icon: Icon, bg, textColor }) => (
             <div
               key={label}
-              className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800"
+              className="bg-white dark:bg-gray-900 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-gray-800 shadow-xs flex flex-col justify-between"
             >
-              <Icon className={`w-6 h-6 mb-3 text-${color}-500`} />
-              <p className="text-2xl font-black text-gray-900 dark:text-white">
-                {value}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {label}
-              </p>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${bg} ${textColor}`}>
+                <Icon className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-tight truncate">
+                  {value}
+                </p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium mt-0.5">
+                  {label}
+                </p>
+              </div>
             </div>
           ))}
         </div>
 
         {/* Quick Links */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             {
               href: "/admin/users",
               label: "Kelola Pengguna",
-              desc: `${totalUsers} user`,
+              desc: `${totalUsers} akun terdaftar`,
             },
             {
               href: "/admin/courses",
               label: "Kelola Kursus",
-              desc: `${totalCourses} kursus`,
+              desc: `${totalCourses} kursus platform`,
             },
             {
               href: "/learning-paths",
@@ -156,8 +209,8 @@ export default async function AdminPage() {
             },
             {
               href: "/admin/transactions",
-              label: "Transaksi",
-              desc: "Riwayat pembayaran",
+              label: "Transaksi & Finansial",
+              desc: "Riwayat pembayaran siswa",
             },
           ].map(({ href, label, desc }) => (
             <Link
@@ -165,24 +218,102 @@ export default async function AdminPage() {
               href={href}
               className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition group"
             >
-              <p className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition mb-1">
+              <p className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition mb-1 text-sm sm:text-base">
                 {label}
               </p>
-              <p className="text-sm text-gray-400">{desc}</p>
+              <p className="text-xs text-gray-400">{desc}</p>
             </Link>
           ))}
         </div>
 
-        {/* Recent Users */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 dark:border-gray-800">
-            <h2 className="font-bold text-gray-900 dark:text-white">
-              Pengguna Terbaru
-            </h2>
+        {/* Recent Transactions Feed */}
+        <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-xs mb-8">
+          <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg">
+                Pendaftaran &amp; Transaksi Terbaru
+              </h2>
+              <p className="text-xs text-gray-400">
+                5 transaksi pendaftaran siswa terakhir yang berhasil diproses
+              </p>
+            </div>
+            <Link
+              href="/admin/transactions"
+              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+            >
+              <span>Lihat Semua Transaksi</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            {recentEnrollments.length === 0 ? (
+              <div className="p-8 text-center text-xs text-gray-400">
+                Belum ada transaksi pendaftaran terbaru.
+              </div>
+            ) : (
+              recentEnrollments.map((en) => {
+                const effectiveAmount = en.amount || en.course.price;
+                return (
+                  <div
+                    key={en.id}
+                    className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <CheckCircle className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-gray-900 dark:text-white text-xs sm:text-sm truncate">
+                          {en.user.fullName || en.user.email}
+                        </p>
+                        <p className="text-[11px] text-gray-400 truncate">
+                          Mendaftar pada: <strong className="text-gray-700 dark:text-gray-300">{en.course.title}</strong>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-black text-gray-900 dark:text-white text-xs sm:text-sm">
+                        {effectiveAmount === 0
+                          ? "Gratis"
+                          : `Rp ${effectiveAmount.toLocaleString("id-ID")}`}
+                      </p>
+                      <p className="text-[10px] text-gray-400">
+                        {new Date(en.enrolledAt).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Recent Users Table */}
+        <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-xs">
+          <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg">
+                Pengguna Terbaru
+              </h2>
+              <p className="text-xs text-gray-400">
+                Daftar akun yang baru saja mendaftar ke platform Learnify
+              </p>
+            </div>
+            <Link
+              href="/admin/users"
+              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+            >
+              <span>Kelola Pengguna Penuh</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
           <AdminUserTable users={recentUsers} />
         </div>
-      </div>
+      </main>
 
       <Footer />
     </div>

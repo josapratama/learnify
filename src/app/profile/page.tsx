@@ -14,6 +14,7 @@ import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import CopyCertificateLinkButton from "@/components/CopyCertificateLinkButton";
 
 export const metadata = {
   title: "Profil & Pengaturan | Learnify",
@@ -54,13 +55,34 @@ export default async function ProfilePage() {
   const completedCourses = dbUser.enrollments
     .map((en) => {
       const allLessons = en.course.sections.flatMap((s) => s.lessons);
-      const completedCount = allLessons.filter(
+      const completedLessons = allLessons.filter(
         (l) => l.progress.length > 0 && l.progress[0].isCompleted,
-      ).length;
+      );
       const progress =
-        allLessons.length > 0 ? (completedCount / allLessons.length) * 100 : 0;
+        allLessons.length > 0
+          ? (completedLessons.length / allLessons.length) * 100
+          : 0;
 
-      return { ...en.course, enrollmentId: en.id, progress, enrolledAt: en.enrolledAt };
+      const completionDates = completedLessons
+        .map((l) => l.progress[0]?.completedAt)
+        .filter(Boolean) as (Date | string)[];
+
+      const completedAt =
+        completionDates.length > 0
+          ? new Date(
+              Math.max(
+                ...completionDates.map((d) => new Date(d).getTime()),
+              ),
+            )
+          : en.enrolledAt;
+
+      return {
+        ...en.course,
+        enrollmentId: en.id,
+        progress,
+        completedAt,
+        enrolledAt: en.enrolledAt,
+      };
     })
     .filter((c) => c.progress === 100);
 
@@ -144,23 +166,31 @@ export default async function ProfilePage() {
                 <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
                   {course.title}
                 </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 flex items-center gap-1">
-                  <Calendar className="w-4 h-4" /> Diselesaikan pada{" "}
-                  {new Date(course.enrolledAt).toLocaleDateString("id-ID", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
+                <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-6 flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>
+                    Lulus pada{" "}
+                    <strong>
+                      {new Date(course.completedAt).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </strong>
+                  </span>
                 </p>
 
-                <div className="mt-auto flex gap-3">
+                <div className="mt-auto flex items-center gap-2 flex-wrap">
                   <Link
                     href={`/certificate/${course.enrollmentId}`}
-                    className="flex-1 bg-gray-900 dark:bg-white dark:text-gray-900 text-white py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-800 dark:hover:bg-gray-100 transition shadow-sm"
+                    className="flex-1 bg-gray-900 dark:bg-white dark:text-gray-900 text-white py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-800 dark:hover:bg-gray-100 transition shadow-sm text-center"
                   >
                     <Award className="w-4 h-4 text-amber-500" />
-                    <span>Lihat & Cetak PDF</span>
+                    <span>Lihat &amp; Cetak PDF</span>
                   </Link>
+                  <CopyCertificateLinkButton
+                    certificateUrl={`${process.env.NEXT_PUBLIC_BASE_URL || "https://learnify.josapratama.com"}/certificate/${course.enrollmentId}`}
+                  />
                   <Link
                     href={`/courses/${course.slug}`}
                     className="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
